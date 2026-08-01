@@ -44,19 +44,29 @@ jobs:
       - name: Compilar APK de Release firmado
         run: ./gradlew assembleRelease
 
+      - name: Preparar las notas del Release
+        run: |
+          if [ -f RELEASE_NOTES.md ]; then
+            cp RELEASE_NOTES.md notas_release.md
+          else
+            echo "## Dat-Gar Scan ${{ github.ref_name }}" > notas_release.md
+          fi
+          cat >> notas_release.md << 'EOF'
+
+          ---
+
+          **Nota sobre la instalación:** al instalar fuera de Google Play, Play Protect puede
+          mostrar un aviso de "no se ha visto esta app antes" o "desarrollador desconocido".
+          Esto es normal para cualquier app instalada fuera de la tienda — no significa que
+          la app sea insegura, solo que Google no tiene historial de instalaciones registrado
+          todavía. Puedes continuar la instalación con confianza.
+          EOF
+
       - name: Crear el Release en GitHub con el APK adjunto
         uses: softprops/action-gh-release@v2
         with:
           files: app/build/outputs/apk/release/app-release.apk
-          body: |
-            ## Dat-Gar Scan ${{ github.ref_name }}
-
-            **Nota sobre la instalación:** al instalar fuera de Google Play, Play Protect puede
-            mostrar un aviso de "no se ha visto esta app antes" o "desarrollador desconocido".
-            Esto es normal para cualquier app instalada fuera de la tienda — no significa que
-            la app sea insegura, solo que Google no tiene historial de instalaciones registrado
-            todavía. Puedes continuar la instalación con confianza.
-          generate_release_notes: true
+          body_path: notas_release.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
