@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "182345954062",
+    "project_id": "datgarscanapp-8f8a6",
+    "storage_bucket": "datgarscanapp-8f8a6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:182345954062:android:b9702ab1c58081b0339d5f",
+        "android_client_info": {
+          "package_name": "com.datgarscan.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbzt_cLniA3Y2751ZyBViaeRF1PZsxJKI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
