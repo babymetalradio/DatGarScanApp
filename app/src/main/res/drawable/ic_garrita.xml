@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Marcador temporal. Para poner el logo real:
+  reemplaza este archivo por tu imagen llamada ic_garrita.png
+  (borra este .xml y sube el .png con el mismo nombre).
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/accent" />
+    <size android:width="44dp" android:height="44dp" />
+</shape>
