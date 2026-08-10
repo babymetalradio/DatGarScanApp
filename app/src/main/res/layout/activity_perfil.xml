@@ -216,6 +216,13 @@
             android:textColor="#E63946"
             android:textSize="14sp" />
 
+        <com.startapp.sdk.ads.banner.Banner
+            android:id="@+id/bannerPerfil"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:layout_gravity="center_horizontal" />
+
     </LinearLayout>
 
 </ScrollView>

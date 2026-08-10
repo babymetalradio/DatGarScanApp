@@ -79,7 +79,7 @@ class LectorActivity : AppCompatActivity() {
 
         cargarPreferencias()
 
-        binding.tvVolver.setOnClickListener { finish() }
+        binding.tvVolver.setOnClickListener { salirDelLector() }
         binding.tvModoLectura.setOnClickListener {
             binding.panelAjustes.visibility =
                 if (binding.panelAjustes.visibility == View.VISIBLE) View.GONE else View.VISIBLE
@@ -396,5 +396,20 @@ class LectorActivity : AppCompatActivity() {
     private fun mostrarError(mensaje: String) {
         binding.tvError.text = mensaje
         binding.tvError.visibility = View.VISIBLE
+    }
+
+    /**
+     * Muestra el anuncio de salida (si toca, ver AnunciosManager) y luego
+     * cierra el lector. Se llama tanto desde el boton propio de "Volver" como
+     * desde el boton atras del sistema, para cubrir ambas formas de salir.
+     */
+    private fun salirDelLector() {
+        com.datgarscan.app.ads.AnunciosManager.registrarSalidaDeLector(this)
+        finish()
+    }
+
+    @Suppress("MissingSuperCall", "OVERRIDE_DEPRECATION")
+    override fun onBackPressed() {
+        salirDelLector()
     }
 }

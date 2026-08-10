@@ -56,6 +56,7 @@ class PerfilActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         cargarPerfil()
+        com.datgarscan.app.ads.AnunciosManager.ocultarBannersSiCorresponde(this, binding.bannerPerfil)
     }
 
     private fun cargarPerfil() {

@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity() {
         binding.rvSeries.layoutManager = GridLayoutManager(this, 2)
         binding.rvSeries.adapter = adapter
 
-        com.datgarscan.app.ads.AnunciosManager.ocultarBannersSiCorresponde(this, binding.bannerAds)
+        com.datgarscan.app.ads.AnunciosManager.ocultarBannersSiCorresponde(this, binding.bannerAds, binding.bannerMenu)
 
         binding.tvActualizar.setOnClickListener { recargarTodo() }
         binding.tvReintentar.setOnClickListener { recargarTodo() }
@@ -158,7 +158,7 @@ class MainActivity : AppCompatActivity() {
             // Al volver de la tienda, aplica de inmediato el "sin anuncios"
             // recien canjeado, sin necesidad de cerrar y abrir la app.
             sincronizarGarritas()
-            com.datgarscan.app.ads.AnunciosManager.ocultarBannersSiCorresponde(this, binding.bannerAds)
+            com.datgarscan.app.ads.AnunciosManager.ocultarBannersSiCorresponde(this, binding.bannerAds, binding.bannerMenu)
         }
     }
 
@@ -237,7 +237,7 @@ class MainActivity : AppCompatActivity() {
                 } catch (e: Exception) { /* seguimos con lo que hubiera */ }
             }
             com.datgarscan.app.ads.AnunciosManager.ocultarBannersSiCorresponde(
-                this@MainActivity, binding.bannerAds
+                this@MainActivity, binding.bannerAds, binding.bannerMenu
             )
         }
     }

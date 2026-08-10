@@ -405,6 +405,13 @@
                 android:textColor="@color/white"
                 android:textSize="14sp" />
 
+            <com.startapp.sdk.ads.banner.Banner
+                android:id="@+id/bannerMenu"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_gravity="center_horizontal" />
+
         </LinearLayout>
 
     </ScrollView>
