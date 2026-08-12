@@ -178,3 +178,12 @@ data class PerfilResponse(
     val data: PerfilData? = null,
     val message: String? = null
 )
+
+data class VersionResponse(
+    val success: Boolean,
+    val hay_version: Boolean = false,
+    val version_name: String? = null,
+    val apk_url: String? = null,
+    val notas: String? = null,
+    val obligatorio: Boolean = false
+)

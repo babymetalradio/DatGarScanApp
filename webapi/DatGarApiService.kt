@@ -69,4 +69,7 @@ interface DatGarApiService {
 
     @GET("api/perfil.php")
     suspend fun obtenerPerfil(): PerfilResponse
+
+    @GET("api/version.php")
+    suspend fun obtenerVersion(): VersionResponse
 }
