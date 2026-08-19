@@ -1,0 +1,87 @@
+name: Publicar Release firmado
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Generar el wrapper de Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Restaurar la llave de firma de Release (desde Secrets)
+        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+
+      - name: Escribir las claves y contraseñas (desde Secrets, nunca se suben al repo)
+        run: |
+          echo "BLOGGER_API_KEY=${{ secrets.BLOGGER_API_KEY }}" >> local.properties
+          echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> local.properties
+          echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> local.properties
+          echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> local.properties
+
+      - name: Dar permisos de ejecución a gradlew
+        run: |
+          gradle wrapper --gradle-version 8.7
+          chmod +x ./gradlew
+
+      - name: Compilar APK de Release firmado
+        run: ./gradlew assembleRelease
+
+      - name: Preparar las notas del Release
+        run: |
+          if [ -f RELEASE_NOTES.md ]; then
+            cp RELEASE_NOTES.md notas_release.md
+          else
+            echo "## Dat-Gar Scan ${{ github.ref_name }}" > notas_release.md
+          fi
+          cat >> notas_release.md << 'EOF'
+
+          ---
+
+          **Nota sobre la instalación:** al instalar fuera de Google Play, Play Protect puede
+          mostrar un aviso de "no se ha visto esta app antes" o "desarrollador desconocido".
+          Esto es normal para cualquier app instalada fuera de la tienda — no significa que
+          la app sea insegura, solo que Google no tiene historial de instalaciones registrado
+          todavía. Puedes continuar la instalación con confianza.
+          EOF
+
+      - name: Crear el Release en GitHub con el APK adjunto
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app/build/outputs/apk/release/app-release.apk
+          body_path: notas_release.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Avisar en el canal de Telegram
+        if: success()
+        run: |
+          MENSAJE="Nueva version de la app disponible: ${{ github.ref_name }}
+
+          Descargala aqui:
+          https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+
+          Nota: al instalar fuera de Google Play puede aparecer un aviso de Play Protect diciendo que no conoce al desarrollador. Es normal en apps instaladas fuera de la tienda, puedes continuar sin problema."
+
+          curl -s -X POST "${{ secrets.TELEGRAM_RELAY_URL }}" \
+            -H "Content-Type: application/json" \
+            -H "X-Secret: ${{ secrets.TELEGRAM_RELAY_SECRET }}" \
+            -d "$(jq -n --arg t "$MENSAJE" '{texto: $t}')"
+
