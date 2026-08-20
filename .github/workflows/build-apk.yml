@@ -29,17 +29,9 @@ jobs:
           fi
           chmod +x ./gradlew
 
-      - name: Generar debug.keystore
+      - name: Restaurar la llave de firma de depuración (fija, desde Secrets)
         run: |
-          keytool -genkeypair -v \
-            -keystore debug.keystore \
-            -storepass android \
-            -alias androiddebugkey \
-            -keypass android \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Android Debug,O=Android,C=US"
+          echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > debug.keystore
           ls -la debug.keystore
 
       - name: Escribir la API key de Blogger
