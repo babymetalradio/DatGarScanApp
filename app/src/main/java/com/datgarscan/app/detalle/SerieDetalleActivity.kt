@@ -14,6 +14,8 @@ import com.datgarscan.app.R
 import com.datgarscan.app.databinding.ActivitySerieDetalleBinding
 import com.datgarscan.app.descargas.DescargasManager
 import com.datgarscan.app.lector.LectorActivity
+import com.datgarscan.app.tienda.ProManager
+import com.datgarscan.app.tienda.TiendaActivity
 import com.datgarscan.app.webapi.CapituloResumen
 import com.datgarscan.app.webapi.WebApiClient
 import kotlinx.coroutines.launch
@@ -173,6 +175,16 @@ class SerieDetalleActivity : AppCompatActivity() {
     }
 
     private fun descargarCapitulo(capitulo: CapituloResumen) {
+        if (!ProManager.esPro(this)) {
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Función Pro")
+                .setMessage("Descargar capítulos para leer sin conexión es un beneficio Pro.\n\nCanjea tus garritas por Pro en la Tienda.")
+                .setPositiveButton("Ir a la Tienda") { _, _ -> startActivity(TiendaActivity.crearIntent(this)) }
+                .setNegativeButton("Cancelar", null)
+                .show()
+            return
+        }
+
         val mangaId = mangaIdActual ?: return
         adapter.actualizarEstadoDescarga(capitulo.id, EstadoDescargaCap.Descargando(0, capitulo.pages))
 

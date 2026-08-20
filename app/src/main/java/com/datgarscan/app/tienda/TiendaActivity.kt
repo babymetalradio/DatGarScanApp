@@ -50,6 +50,9 @@ class TiendaActivity : AppCompatActivity() {
         binding.btnSinAnuncios1Dia.setOnClickListener { comprarSinAnuncios(24) }
         binding.btnSinAnuncios1Semana.setOnClickListener { comprarSinAnuncios(168) }
         binding.btnSinAnuncios1Mes.setOnClickListener { comprarSinAnuncios(720) }
+        binding.btnPro1Dia.setOnClickListener { comprarPro(24) }
+        binding.btnPro1Semana.setOnClickListener { comprarPro(168) }
+        binding.btnPro1Mes.setOnClickListener { comprarPro(720) }
 
         prepararAnuncioRecompensado()
         cargarEstado()
@@ -74,6 +77,14 @@ class TiendaActivity : AppCompatActivity() {
         // Guarda si tiene el beneficio activo, para que el resto de la app
         // sepa que no debe mostrarle anuncios.
         SinAnunciosManager.guardar(this, estado.sin_anuncios, estado.sin_anuncios_hasta)
+        ProManager.guardar(this, estado.pro, estado.pro_hasta)
+
+        if (estado.pro && estado.pro_hasta != null) {
+            binding.tvProEstado.visibility = View.VISIBLE
+            binding.tvProEstado.text = "Pro activo hasta ${formatearFecha(estado.pro_hasta)}"
+        } else {
+            binding.tvProEstado.visibility = View.GONE
+        }
 
         if (estado.sin_anuncios && estado.sin_anuncios_hasta != null) {
             binding.tvSinAnuncios.visibility = View.VISIBLE
@@ -278,6 +289,39 @@ class TiendaActivity : AppCompatActivity() {
                             AlertDialog.Builder(this@TiendaActivity)
                                 .setTitle("Listo")
                                 .setMessage("Ya tienes $descripcion sin anuncios.\n\nVuelve al inicio para que se aplique.")
+                                .setPositiveButton("Entendido", null)
+                                .show()
+                        } else {
+                            Toast.makeText(this@TiendaActivity, estado.message ?: "No se pudo canjear.", Toast.LENGTH_SHORT).show()
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(this@TiendaActivity, com.datgarscan.app.webapi.ErroresRed.mensajeAmable(e), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun comprarPro(horas: Int) {
+        val descripcion = when (horas) {
+            24 -> "1 día"
+            168 -> "1 semana"
+            else -> "1 mes"
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Hazte Pro")
+            .setMessage("¿Canjear tus garritas por $descripcion de Pro?\n\nIncluye: sin anuncios + descarga de capítulos para leer sin conexión.")
+            .setPositiveButton("Canjear") { _, _ ->
+                lifecycleScope.launch {
+                    try {
+                        val estado = WebApiClient.get().comprarPro(horas = horas)
+                        if (estado.success) {
+                            pintarEstado(estado)
+                            AlertDialog.Builder(this@TiendaActivity)
+                                .setTitle("Listo")
+                                .setMessage("Ya eres Pro por $descripcion.\n\nVuelve al inicio para que se aplique.")
                                 .setPositiveButton("Entendido", null)
                                 .show()
                         } else {

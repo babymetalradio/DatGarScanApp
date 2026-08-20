@@ -55,6 +55,12 @@ interface DatGarApiService {
         @Query("horas") horas: Int
     ): GarritasEstado
 
+    @GET("api/garritas.php")
+    suspend fun comprarPro(
+        @Query("accion") accion: String = "comprar_pro",
+        @Query("horas") horas: Int
+    ): GarritasEstado
+
     @POST("api/garritas.php")
     suspend fun canjearCodigo(
         @Query("accion") accion: String = "canjear_codigo",

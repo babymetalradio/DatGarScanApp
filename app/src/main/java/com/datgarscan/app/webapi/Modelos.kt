@@ -151,6 +151,8 @@ data class GarritasEstado(
     val saldo: Int = 0,
     val sin_anuncios: Boolean = false,
     val sin_anuncios_hasta: String? = null,
+    val pro: Boolean = false,
+    val pro_hasta: String? = null,
     val bonus_diario_disponible: Boolean = false,
     val anuncios_vistos_hoy: Int = 0,
     val max_anuncios_dia: Int = 10,
