@@ -46,6 +46,9 @@ class PerfilActivity : AppCompatActivity() {
         binding.btnHistorial.setOnClickListener {
             startActivity(com.datgarscan.app.historial.HistorialActivity.crearIntent(this))
         }
+        binding.btnDescargas.setOnClickListener {
+            startActivity(com.datgarscan.app.descargas.DescargasActivity.crearIntent(this))
+        }
         binding.btnCerrarSesion.setOnClickListener { confirmarCerrarSesion() }
 
         // Bottom nav

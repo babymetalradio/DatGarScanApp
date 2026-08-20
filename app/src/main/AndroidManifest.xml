@@ -54,6 +54,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".descargas.DescargasActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".historial.HistorialActivity"
             android:exported="false" />
 

@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.datgarscan.app.R
 import com.datgarscan.app.databinding.ActivityLectorBinding
+import com.datgarscan.app.descargas.DescargasManager
 import com.datgarscan.app.webapi.HistorialGuardarRequest
 import com.datgarscan.app.webapi.SesionManager
 import com.datgarscan.app.webapi.WebApiClient
@@ -324,6 +325,12 @@ class LectorActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
+                val metadatoOffline = DescargasManager.obtenerMetadato(this@LectorActivity, chapterId)
+                if (metadatoOffline != null) {
+                    cargarPaginasDesdeDescarga(chapterId, metadatoOffline, paginaInicial)
+                    return@launch
+                }
+
                 val respuesta = WebApiClient.get().obtenerCapitulo(chapterId)
                 binding.progressBar.visibility = View.GONE
                 binding.progressBar.clearAnimation()
@@ -381,6 +388,60 @@ class LectorActivity : AppCompatActivity() {
                 binding.progressBar.clearAnimation()
                 mostrarError(com.datgarscan.app.webapi.ErroresRed.mensajeAmable(e))
             }
+        }
+    }
+
+    /**
+     * Descifra las paginas del capitulo descargado a un archivo temporal
+     * (se limpia en onDestroy) y arma el lector igual que en modo online,
+     * pero sin capitulo anterior/siguiente (no sabemos el orden sin red).
+     */
+    private suspend fun cargarPaginasDesdeDescarga(
+        chapterId: Int,
+        metadato: com.datgarscan.app.descargas.CapituloDescargado,
+        paginaInicial: Int
+    ) {
+        try {
+            val rutas = DescargasManager.prepararParaLectura(this@LectorActivity, chapterId)
+            binding.progressBar.visibility = View.GONE
+            binding.progressBar.clearAnimation()
+
+            if (rutas.isEmpty()) {
+                mostrarError("La descarga de este capitulo esta danada. Bórrala y descárgala de nuevo.")
+                return
+            }
+
+            mangaId = metadato.mangaId
+            prevChapterId = null
+            nextChapterId = null
+            val numero = metadato.chapterNumber
+            binding.tvTituloCapitulo.text = "${metadato.mangaTitle} - Cap $numero (sin conexión)"
+            binding.tvCapAnterior.alpha = 0.4f
+            binding.tvCapSiguiente.alpha = 0.4f
+            binding.tvSorpresa.visibility = View.GONE
+
+            paginas = rutas
+
+            binding.rvTira.layoutManager = LinearLayoutManager(this@LectorActivity)
+            binding.rvTira.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    val pos = (binding.rvTira.layoutManager as? LinearLayoutManager)
+                        ?.findFirstVisibleItemPosition() ?: return
+                    if (pos >= 0) actualizarContador(pos)
+                }
+            })
+
+            aplicarDireccion()
+            aplicarModoALaVista()
+
+            val posicionValida = paginaInicial.coerceIn(0, paginas.size - 1)
+            irAPagina(posicionValida)
+            binding.tvContador.visibility = View.VISIBLE
+        } catch (e: Exception) {
+            Log.e("LectorActivity", "Error preparando descarga offline", e)
+            binding.progressBar.visibility = View.GONE
+            binding.progressBar.clearAnimation()
+            mostrarError("No se pudo abrir la descarga.")
         }
     }
 
@@ -448,6 +509,13 @@ class LectorActivity : AppCompatActivity() {
     private fun salirDelLector() {
         com.datgarscan.app.ads.AnunciosManager.registrarSalidaDeLector(this)
         finish()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (chapterId > 0) {
+            DescargasManager.limpiarTemporalesLectura(this, chapterId)
+        }
     }
 
     @Suppress("MissingSuperCall", "OVERRIDE_DEPRECATION")

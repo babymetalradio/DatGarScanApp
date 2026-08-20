@@ -6,20 +6,28 @@
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:background="@drawable/bg_tarjeta"
-    android:padding="14dp"
+    android:padding="12dp"
     android:layout_marginHorizontal="16dp"
-    android:layout_marginBottom="6dp"
+    android:layout_marginBottom="8dp"
     android:clickable="true"
     android:focusable="true">
+
+    <ImageView
+        android:id="@+id/ivPortada"
+        android:layout_width="56dp"
+        android:layout_height="76dp"
+        android:scaleType="centerCrop"
+        android:background="@color/surface" />
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:layout_marginStart="12dp"
         android:orientation="vertical">
 
         <TextView
-            android:id="@+id/tvTitulo"
+            android:id="@+id/tvTituloManga"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/white"
@@ -27,29 +35,28 @@
             android:textStyle="bold"
             android:maxLines="2"
             android:ellipsize="end"
-            tools:text="Capítulo 45 — Título del capítulo" />
+            tools:text="Tonikaku Kawaii" />
 
         <TextView
-            android:id="@+id/tvFecha"
+            android:id="@+id/tvCapitulo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:textColor="@color/muted"
             android:textSize="12sp"
-            tools:text="14 abr 2022" />
+            tools:text="Cap 45 · 18 págs" />
 
     </LinearLayout>
 
     <TextView
-        android:id="@+id/tvDescargar"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginStart="8dp"
-        android:gravity="center"
-        android:textSize="17sp"
-        android:background="@drawable/bg_input"
+        android:id="@+id/tvBorrar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:text="Borrar"
+        android:textColor="#e63946"
+        android:textSize="12sp"
         android:clickable="true"
-        android:focusable="true"
-        tools:text="⬇" />
+        android:focusable="true" />
 
 </LinearLayout>

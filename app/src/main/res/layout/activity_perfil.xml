@@ -272,6 +272,43 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/btnDescargas"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="10dp"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="16dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_fila_perfil"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⬇"
+                    android:textSize="16sp"
+                    android:layout_marginEnd="12dp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Mis descargas"
+                    android:textColor="@color/white"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="›"
+                    android:textColor="@color/muted"
+                    android:textSize="20sp" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/btnTienda"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
