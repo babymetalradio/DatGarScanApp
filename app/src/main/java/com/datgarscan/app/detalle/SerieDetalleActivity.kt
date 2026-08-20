@@ -13,7 +13,6 @@ import com.bumptech.glide.Glide
 import com.datgarscan.app.R
 import com.datgarscan.app.databinding.ActivitySerieDetalleBinding
 import com.datgarscan.app.descargas.DescargasManager
-import com.datgarscan.app.descargas.EstadoDescargaCap
 import com.datgarscan.app.lector.LectorActivity
 import com.datgarscan.app.webapi.CapituloResumen
 import com.datgarscan.app.webapi.WebApiClient
