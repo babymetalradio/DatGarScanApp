@@ -540,7 +540,7 @@ class LectorActivity : AppCompatActivity() {
     private fun registrarDetectorDeCapturas() {
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
 
-        val callback = android.view.WindowManager.ScreenCaptureCallback {
+        val callback = android.app.Activity.ScreenCaptureCallback {
             runOnUiThread {
                 Toast.makeText(this, mensajesTroll.random(), Toast.LENGTH_SHORT).show()
             }
@@ -551,7 +551,7 @@ class LectorActivity : AppCompatActivity() {
 
     private fun desregistrarDetectorDeCapturas() {
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
-        (callbackCaptura as? android.view.WindowManager.ScreenCaptureCallback)?.let {
+        (callbackCaptura as? android.app.Activity.ScreenCaptureCallback)?.let {
             unregisterScreenCaptureCallback(it)
         }
         callbackCaptura = null
