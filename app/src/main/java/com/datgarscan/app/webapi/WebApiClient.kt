@@ -12,12 +12,25 @@ object WebApiClient {
     const val SITE_URL = "https://datgarscanlation.xyz/"
 
     @Volatile private var instancia: DatGarApiService? = null
+    @Volatile private var instanciaAdmin: DatGarApiService? = null
     @Volatile private var okHttpCompartido: OkHttpClient? = null
     @Volatile private var glideConfigurado = false
 
     fun get(): DatGarApiService {
         return instancia ?: synchronized(this) {
             instancia ?: crear().also { instancia = it }
+        }
+    }
+
+    /**
+     * Igual que get(), pero con timeout mucho mas largo (2 minutos en vez
+     * de 20s). Usar solo para llamadas admin que pueden tardar, como
+     * importar un capitulo completo (el servidor descarga y marca de agua
+     * cada pagina una por una).
+     */
+    fun getAdmin(): DatGarApiService {
+        return instanciaAdmin ?: synchronized(this) {
+            instanciaAdmin ?: crearAdmin().also { instanciaAdmin = it }
         }
     }
 
@@ -71,6 +84,21 @@ object WebApiClient {
         val retrofit = Retrofit.Builder()
             .baseUrl(SITE_URL)
             .client(okHttp())
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        return retrofit.create(DatGarApiService::class.java)
+    }
+
+    private fun crearAdmin(): DatGarApiService {
+        val clienteLargo = okHttp().newBuilder()
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(180, TimeUnit.SECONDS)
+            .build()
+
+        val retrofit = Retrofit.Builder()
+            .baseUrl(SITE_URL)
+            .client(clienteLargo)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 

@@ -76,7 +76,7 @@ class LoginActivity : AppCompatActivity() {
                     return@launch
                 }
 
-                SesionManager.guardarSesion(this@LoginActivity, respuesta.token, respuesta.user.username)
+                SesionManager.guardarSesion(this@LoginActivity, respuesta.token, respuesta.user.username, respuesta.user.role)
                 setResult(RESULT_OK)
                 finish()
 
@@ -108,7 +108,7 @@ class LoginActivity : AppCompatActivity() {
                     return@launch
                 }
 
-                SesionManager.guardarSesion(this@LoginActivity, respuesta.token, respuesta.user.username)
+                SesionManager.guardarSesion(this@LoginActivity, respuesta.token, respuesta.user.username, respuesta.user.role)
                 setResult(RESULT_OK)
                 finish()
 
