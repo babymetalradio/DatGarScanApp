@@ -1,5 +1,6 @@
 package com.datgarscan.app.favoritos
 
+import com.datgarscan.app.BaseActivity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -16,7 +17,7 @@ import com.datgarscan.app.webapi.MangaResumen
 import com.datgarscan.app.webapi.WebApiClient
 import kotlinx.coroutines.launch
 
-class FavoritosActivity : AppCompatActivity() {
+class FavoritosActivity : BaseActivity() {
 
     companion object {
         fun crearIntent(context: Context): Intent = Intent(context, FavoritosActivity::class.java)

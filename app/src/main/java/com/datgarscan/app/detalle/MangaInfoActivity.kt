@@ -1,5 +1,6 @@
 package com.datgarscan.app.detalle
 
+import com.datgarscan.app.BaseActivity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -11,7 +12,7 @@ import com.datgarscan.app.databinding.ActivityMangaInfoBinding
 import com.datgarscan.app.webapi.WebApiClient
 import kotlinx.coroutines.launch
 
-class MangaInfoActivity : AppCompatActivity() {
+class MangaInfoActivity : BaseActivity() {
 
     companion object {
         private const val EXTRA_SLUG = "extra_slug"

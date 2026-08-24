@@ -1,5 +1,6 @@
 package com.datgarscan.app.admin
 
+import com.datgarscan.app.BaseActivity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -18,7 +19,7 @@ import kotlinx.coroutines.launch
  * los capitulos que todavia no estan importados. Solo accesible para
  * usuarios con rol admin/editor (ver SesionManager.esAdminOEditor()).
  */
-class AdminPendientesActivity : AppCompatActivity() {
+class AdminPendientesActivity : BaseActivity() {
 
     companion object {
         fun crearIntent(context: Context): Intent = Intent(context, AdminPendientesActivity::class.java)
@@ -48,26 +49,44 @@ class AdminPendientesActivity : AppCompatActivity() {
         binding.tvVacio.visibility = View.GONE
         binding.tvEscanear.isEnabled = false
 
+        val acumulado = mutableListOf<MangaPendiente>()
+
         lifecycleScope.launch {
             try {
-                val respuesta = WebApiClient.getAdmin().listarPendientes()
+                var pagina = 0
+                while (true) {
+                    val respuesta = WebApiClient.getAdmin().listarPendientes(pagina = pagina)
+
+                    if (!respuesta.success) {
+                        binding.progressBar.visibility = View.GONE
+                        binding.tvEscanear.isEnabled = true
+                        Toast.makeText(this@AdminPendientesActivity, respuesta.message ?: "Error al escanear.", Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+
+                    acumulado.addAll(respuesta.pendientes)
+                    adapter.actualizar(acumulado.toList())
+
+                    binding.tvTitulo.text = if (respuesta.siguiente_pagina != null)
+                        "Escaneando... (${respuesta.escaneados_hasta_ahora}/${respuesta.total_mangas})"
+                    else
+                        "Capítulos pendientes"
+
+                    if (respuesta.siguiente_pagina == null) break
+                    pagina = respuesta.siguiente_pagina
+                }
+
                 binding.progressBar.visibility = View.GONE
                 binding.tvEscanear.isEnabled = true
 
-                if (!respuesta.success) {
-                    Toast.makeText(this@AdminPendientesActivity, respuesta.message ?: "Error al escanear.", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-
-                if (respuesta.pendientes.isEmpty()) {
+                if (acumulado.isEmpty()) {
                     binding.tvVacio.text = "Todo al día — no hay capítulos pendientes de importar."
                     binding.tvVacio.visibility = View.VISIBLE
                 }
-
-                adapter.actualizar(respuesta.pendientes)
             } catch (e: Exception) {
                 binding.progressBar.visibility = View.GONE
                 binding.tvEscanear.isEnabled = true
+                binding.tvTitulo.text = "Capítulos pendientes"
                 Toast.makeText(this@AdminPendientesActivity, com.datgarscan.app.webapi.ErroresRed.mensajeAmable(e), Toast.LENGTH_SHORT).show()
             }
         }

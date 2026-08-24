@@ -1,5 +1,6 @@
 package com.datgarscan.app.perfil
 
+import com.datgarscan.app.BaseActivity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -17,7 +18,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-class PerfilActivity : AppCompatActivity() {
+class PerfilActivity : BaseActivity() {
 
     companion object {
         fun crearIntent(context: Context): Intent = Intent(context, PerfilActivity::class.java)

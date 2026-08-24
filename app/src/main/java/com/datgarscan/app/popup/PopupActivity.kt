@@ -1,5 +1,6 @@
 package com.datgarscan.app.popup
 
+import com.datgarscan.app.BaseActivity
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -13,7 +14,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.datgarscan.app.databinding.ActivityPopupBinding
 
-class PopupActivity : AppCompatActivity() {
+class PopupActivity : BaseActivity() {
 
     companion object {
         private const val EXTRA_TITULO = "extra_titulo"

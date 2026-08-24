@@ -26,7 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     companion object {
         const val EXTRA_ABRIR_MANGA_SLUG = "extra_abrir_manga_slug"
@@ -345,7 +345,14 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                dialogo.show()
+                // Este aviso es la unica pantalla de la app donde permitimos
+                // capturas (por si alguien quiere guardar las notas de la
+                // version, por ejemplo). Se restaura el bloqueo apenas se
+                // cierra el dialogo, sin importar como se haya cerrado.
+                permitirCapturasTemporalmente()
+                val dialogoConstruido = dialogo.create()
+                dialogoConstruido.setOnDismissListener { restaurarProteccion() }
+                dialogoConstruido.show()
 
             } catch (e: Exception) {
                 // Si falla, simplemente no se muestra nada - no es critico

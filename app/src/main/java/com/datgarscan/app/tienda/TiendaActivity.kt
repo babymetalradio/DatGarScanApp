@@ -1,5 +1,6 @@
 package com.datgarscan.app.tienda
 
+import com.datgarscan.app.BaseActivity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -21,7 +22,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-class TiendaActivity : AppCompatActivity() {
+class TiendaActivity : BaseActivity() {
 
     companion object {
         private const val SEGUNDOS_MINIMOS = 3

@@ -1,5 +1,6 @@
 package com.datgarscan.app.lector
 
+import com.datgarscan.app.BaseActivity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -23,7 +24,7 @@ import com.datgarscan.app.webapi.SesionManager
 import com.datgarscan.app.webapi.WebApiClient
 import kotlinx.coroutines.launch
 
-class LectorActivity : AppCompatActivity() {
+class LectorActivity : BaseActivity() {
 
     companion object {
         private const val EXTRA_CHAPTER_ID = "extra_chapter_id"
@@ -59,12 +60,6 @@ class LectorActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // FLAG_SECURE debe ir ANTES de setContentView. Si se agrega despues,
-        // el primer frame puede llegar a dibujarse sin la proteccion activa,
-        // y en algunos dispositivos una captura tomada justo en ese instante
-        // logra colarse.
-        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
-
         binding = ActivityLectorBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -77,8 +72,6 @@ class LectorActivity : AppCompatActivity() {
         }
 
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
-        registrarDetectorDeCapturas()
 
         // Anuncio de pantalla completa cada cierto numero de capitulos abiertos
         com.datgarscan.app.ads.AnunciosManager.registrarCapituloAbierto(this)
@@ -521,50 +514,6 @@ class LectorActivity : AppCompatActivity() {
         if (chapterId > 0) {
             DescargasManager.limpiarTemporalesLectura(this, chapterId)
         }
-        desregistrarDetectorDeCapturas()
-    }
-
-    private var callbackCaptura: Any? = null
-
-    private val mensajesTroll = listOf(
-        "7° mandamiento: \"No robarás\""
-    )
-
-    /**
-     * Solo funciona en Android 14+ (API 34): el sistema avisa cuando
-     * detecta que se tomo una captura de pantalla. La imagen que le queda
-     * guardada al usuario sigue siendo negra por el FLAG_SECURE (eso no lo
-     * controla esta funcion), pero aprovechamos el aviso para mostrarle un
-     * mensaje burlon dentro de la app justo en ese momento.
-     */
-    private fun registrarDetectorDeCapturas() {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
-
-        try {
-            val callback = android.app.Activity.ScreenCaptureCallback {
-                runOnUiThread {
-                    Toast.makeText(this, mensajesTroll.random(), Toast.LENGTH_SHORT).show()
-                }
-            }
-            callbackCaptura = callback
-            registerScreenCaptureCallback(mainExecutor, callback)
-        } catch (e: Exception) {
-            // DEBUG TEMPORAL: para ver por que no aparece en Android 16.
-            // Quitar este Toast despues de diagnosticar.
-            runOnUiThread {
-                Toast.makeText(this, "Debug: ${e.javaClass.simpleName} - ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    private fun desregistrarDetectorDeCapturas() {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
-        try {
-            (callbackCaptura as? android.app.Activity.ScreenCaptureCallback)?.let {
-                unregisterScreenCaptureCallback(it)
-            }
-        } catch (e: Exception) { /* nada que limpiar */ }
-        callbackCaptura = null
     }
 
     @Suppress("MissingSuperCall", "OVERRIDE_DEPRECATION")

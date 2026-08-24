@@ -1,5 +1,6 @@
 package com.datgarscan.app.detalle
 
+import com.datgarscan.app.BaseActivity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -20,7 +21,7 @@ import com.datgarscan.app.webapi.CapituloResumen
 import com.datgarscan.app.webapi.WebApiClient
 import kotlinx.coroutines.launch
 
-class SerieDetalleActivity : AppCompatActivity() {
+class SerieDetalleActivity : BaseActivity() {
 
     companion object {
         private const val EXTRA_SLUG = "extra_slug"

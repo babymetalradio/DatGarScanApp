@@ -1,5 +1,6 @@
 package com.datgarscan.app.descargas
 
+import com.datgarscan.app.BaseActivity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -9,7 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.datgarscan.app.databinding.ActivityDescargasBinding
 import com.datgarscan.app.lector.LectorActivity
 
-class DescargasActivity : AppCompatActivity() {
+class DescargasActivity : BaseActivity() {
 
     companion object {
         fun crearIntent(context: Context): Intent = Intent(context, DescargasActivity::class.java)

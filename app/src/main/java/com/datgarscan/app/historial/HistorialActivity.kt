@@ -1,5 +1,6 @@
 package com.datgarscan.app.historial
 
+import com.datgarscan.app.BaseActivity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -14,7 +15,7 @@ import com.datgarscan.app.lector.LectorActivity
 import com.datgarscan.app.webapi.WebApiClient
 import kotlinx.coroutines.launch
 
-class HistorialActivity : AppCompatActivity() {
+class HistorialActivity : BaseActivity() {
 
     companion object {
         fun crearIntent(context: Context): Intent = Intent(context, HistorialActivity::class.java)

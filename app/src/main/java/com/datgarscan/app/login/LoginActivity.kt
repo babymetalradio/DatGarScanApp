@@ -1,5 +1,6 @@
 package com.datgarscan.app.login
 
+import com.datgarscan.app.BaseActivity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -15,7 +16,7 @@ import com.datgarscan.app.webapi.SesionManager
 import com.datgarscan.app.webapi.WebApiClient
 import kotlinx.coroutines.launch
 
-class LoginActivity : AppCompatActivity() {
+class LoginActivity : BaseActivity() {
 
     companion object {
         fun crearIntent(context: Context): Intent = Intent(context, LoginActivity::class.java)
