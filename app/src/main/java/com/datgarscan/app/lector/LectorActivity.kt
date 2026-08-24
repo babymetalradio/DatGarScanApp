@@ -549,9 +549,11 @@ class LectorActivity : AppCompatActivity() {
             callbackCaptura = callback
             registerScreenCaptureCallback(mainExecutor, callback)
         } catch (e: Exception) {
-            // Si el dispositivo no lo soporta o falta el permiso, seguimos
-            // sin el aviso troll; el bloqueo real (FLAG_SECURE) no depende
-            // de esto y sigue funcionando igual.
+            // DEBUG TEMPORAL: para ver por que no aparece en Android 16.
+            // Quitar este Toast despues de diagnosticar.
+            runOnUiThread {
+                Toast.makeText(this, "Debug: ${e.javaClass.simpleName} - ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
     }
 
