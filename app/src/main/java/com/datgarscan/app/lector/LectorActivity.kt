@@ -540,20 +540,28 @@ class LectorActivity : AppCompatActivity() {
     private fun registrarDetectorDeCapturas() {
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
 
-        val callback = android.app.Activity.ScreenCaptureCallback {
-            runOnUiThread {
-                Toast.makeText(this, mensajesTroll.random(), Toast.LENGTH_SHORT).show()
+        try {
+            val callback = android.app.Activity.ScreenCaptureCallback {
+                runOnUiThread {
+                    Toast.makeText(this, mensajesTroll.random(), Toast.LENGTH_SHORT).show()
+                }
             }
+            callbackCaptura = callback
+            registerScreenCaptureCallback(mainExecutor, callback)
+        } catch (e: Exception) {
+            // Si el dispositivo no lo soporta o falta el permiso, seguimos
+            // sin el aviso troll; el bloqueo real (FLAG_SECURE) no depende
+            // de esto y sigue funcionando igual.
         }
-        callbackCaptura = callback
-        registerScreenCaptureCallback(mainExecutor, callback)
     }
 
     private fun desregistrarDetectorDeCapturas() {
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
-        (callbackCaptura as? android.app.Activity.ScreenCaptureCallback)?.let {
-            unregisterScreenCaptureCallback(it)
-        }
+        try {
+            (callbackCaptura as? android.app.Activity.ScreenCaptureCallback)?.let {
+                unregisterScreenCaptureCallback(it)
+            }
+        } catch (e: Exception) { /* nada que limpiar */ }
         callbackCaptura = null
     }
 
