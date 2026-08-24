@@ -355,8 +355,15 @@ class MainActivity : AppCompatActivity() {
 
     /** Compara version_name tipo "1.9.6" contra "1.9.5", numero por numero. */
     private fun esVersionMasNueva(disponible: String, instalada: String): Boolean {
-        val partesDisponible = disponible.split(".").mapNotNull { it.toIntOrNull() }
-        val partesInstalada = instalada.split(".").mapNotNull { it.toIntOrNull() }
+        // toIntOrNull() descarta segmentos como "9-beta" completos (no son
+        // un numero puro), lo que rompe la comparacion en versiones beta.
+        // Por eso tomamos solo los digitos iniciales de cada segmento.
+        fun partes(v: String) = v.split(".").map {
+            Regex("^\\d+").find(it)?.value?.toIntOrNull() ?: 0
+        }
+
+        val partesDisponible = partes(disponible)
+        val partesInstalada = partes(instalada)
         val maxLen = maxOf(partesDisponible.size, partesInstalada.size)
 
         for (i in 0 until maxLen) {
