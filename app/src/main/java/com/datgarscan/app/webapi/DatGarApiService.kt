@@ -81,7 +81,8 @@ interface DatGarApiService {
 
     @GET("api/admin_pendientes.php")
     suspend fun listarPendientes(
-        @Query("accion") accion: String = "listar"
+        @Query("accion") accion: String = "listar",
+        @Query("pagina") pagina: Int = 0
     ): PendientesResponse
 
     @GET("api/admin_pendientes.php")

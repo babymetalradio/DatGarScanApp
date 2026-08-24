@@ -207,6 +207,10 @@ data class MangaPendiente(
 data class PendientesResponse(
     val success: Boolean,
     val pendientes: List<MangaPendiente> = emptyList(),
+    val pagina: Int = 0,
+    val siguiente_pagina: Int? = null,
+    val total_mangas: Int = 0,
+    val escaneados_hasta_ahora: Int = 0,
     val message: String? = null
 )
 
