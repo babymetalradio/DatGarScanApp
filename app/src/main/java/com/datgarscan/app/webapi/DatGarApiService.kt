@@ -78,17 +78,4 @@ interface DatGarApiService {
 
     @GET("api/version.php")
     suspend fun obtenerVersion(): VersionResponse
-
-    @GET("api/admin_pendientes.php")
-    suspend fun listarPendientes(
-        @Query("accion") accion: String = "listar",
-        @Query("pagina") pagina: Int = 0
-    ): PendientesResponse
-
-    @GET("api/admin_pendientes.php")
-    suspend fun importarCapituloPendiente(
-        @Query("accion") accion: String = "importar",
-        @Query("manga_id") mangaId: Int,
-        @Query("numero") numero: Double
-    ): ImportarCapituloResponse
 }

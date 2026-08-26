@@ -189,32 +189,3 @@ data class VersionResponse(
     val notas: String? = null,
     val obligatorio: Boolean = false
 )
-
-data class CapituloPendiente(
-    val numero: Double,
-    val titulo: String,
-    val paginas: Int
-)
-
-data class MangaPendiente(
-    val manga_id: Int,
-    val slug: String,
-    val title: String,
-    val error: String? = null,
-    val capitulos: List<CapituloPendiente> = emptyList()
-)
-
-data class PendientesResponse(
-    val success: Boolean,
-    val pendientes: List<MangaPendiente> = emptyList(),
-    val pagina: Int = 0,
-    val siguiente_pagina: Int? = null,
-    val total_mangas: Int = 0,
-    val escaneados_hasta_ahora: Int = 0,
-    val message: String? = null
-)
-
-data class ImportarCapituloResponse(
-    val success: Boolean,
-    val message: String? = null
-)

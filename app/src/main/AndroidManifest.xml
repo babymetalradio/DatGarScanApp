@@ -59,10 +59,6 @@
             android:exported="false" />
 
         <activity
-            android:name=".admin.AdminPendientesActivity"
-            android:exported="false" />
-
-        <activity
             android:name=".historial.HistorialActivity"
             android:exported="false" />
 

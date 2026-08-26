@@ -51,12 +51,6 @@ class PerfilActivity : BaseActivity() {
             startActivity(com.datgarscan.app.descargas.DescargasActivity.crearIntent(this))
         }
 
-        if (SesionManager.esAdminOEditor()) {
-            binding.btnPanelAdmin.visibility = android.view.View.VISIBLE
-            binding.btnPanelAdmin.setOnClickListener {
-                startActivity(com.datgarscan.app.admin.AdminPendientesActivity.crearIntent(this))
-            }
-        }
         binding.btnCerrarSesion.setOnClickListener { confirmarCerrarSesion() }
 
         // Bottom nav
