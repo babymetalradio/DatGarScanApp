@@ -78,7 +78,8 @@ class TiendaActivity : BaseActivity() {
         // Guarda si tiene el beneficio activo, para que el resto de la app
         // sepa que no debe mostrarle anuncios.
         SinAnunciosManager.guardar(this, estado.sin_anuncios, estado.sin_anuncios_hasta)
-        ProManager.guardar(this, estado.pro, estado.pro_hasta)
+        // Pro ya no guarda nada por su cuenta: ProManager.esPro() consulta
+        // directo a SinAnunciosManager, que se acaba de actualizar arriba.
 
         if (estado.pro && estado.pro_hasta != null) {
             binding.tvProEstado.visibility = View.VISIBLE
