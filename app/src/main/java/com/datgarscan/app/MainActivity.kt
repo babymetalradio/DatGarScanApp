@@ -266,6 +266,12 @@ class MainActivity : BaseActivity() {
             } catch (e: Exception) {
                 // Si falla, se mantiene lo que hubiera guardado de antes
             }
+            // El banner ya se pudo haber mostrado con el valor viejo (cache)
+            // antes de que esta sincronizacion terminara. Lo volvemos a
+            // evaluar ahora que SinAnunciosManager ya tiene el dato fresco.
+            com.datgarscan.app.ads.AnunciosManager.ocultarBannersSiCorresponde(
+                this@MainActivity, binding.bannerAds, binding.bannerMenu
+            )
         }
     }
 
