@@ -1,3 +1,23 @@
+## Dat-Gar Scan v1.9.9
+
+
+### Privacidad y seguridad
+
+- Bloqueo de capturas y grabación de pantalla ahora aplica en toda la app (antes solo en el lector).
+- Corrección: el bloqueo de capturas podía fallar en el primer instante al abrir el lector.
+- Corrección: la vista de doble página en modo manga (derecha a izquierda) mostraba las páginas al revés en algunos casos.
+- Corrección: los ajustes de "Fondo" y "Dirección" del lector no se aplicaban.
+
+### Pro y garritas
+
+- Corrección: comprar Pro no siempre ocultaba los anuncios de inmediato.
+- Corrección: los anuncios de "retorno" automáticos (al volver a la app) ya no aparecen.
+- Los códigos canjeables ahora pueden dar tiempo de Pro además de garritas, con opciones avanzadas (uso único o general, límite de usos, fecha de caducidad).
+
+### Otros
+
+- Logo nuevo en la pantalla de Inicio.
+
 ## Dat-Gar Scan v1.9.8
 
 
