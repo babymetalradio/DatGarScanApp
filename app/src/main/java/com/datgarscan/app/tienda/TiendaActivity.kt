@@ -260,7 +260,7 @@ class TiendaActivity : BaseActivity() {
                 val estado = WebApiClient.get().canjearCodigo(req = CodigoRequest(codigo))
                 if (estado.success) {
                     pintarEstado(estado)
-                    Toast.makeText(this@TiendaActivity, "+${estado.ganadas ?: 0} garritas", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@TiendaActivity, estado.message ?: "+${estado.ganadas ?: 0} garritas", Toast.LENGTH_LONG).show()
                 } else {
                     Toast.makeText(this@TiendaActivity, estado.message ?: "Código no válido.", Toast.LENGTH_SHORT).show()
                 }
