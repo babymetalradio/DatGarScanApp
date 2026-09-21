@@ -78,4 +78,7 @@ interface DatGarApiService {
 
     @GET("api/version.php")
     suspend fun obtenerVersion(): VersionResponse
+
+    @POST("api/reporte.php")
+    suspend fun enviarReporte(@Body req: ReporteRequest): RespuestaSimple
 }

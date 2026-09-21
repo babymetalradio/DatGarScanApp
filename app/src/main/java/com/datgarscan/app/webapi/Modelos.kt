@@ -189,3 +189,9 @@ data class VersionResponse(
     val notas: String? = null,
     val obligatorio: Boolean = false
 )
+
+data class ReporteRequest(
+    val asunto: String,
+    val manga: String = "",
+    val reporte: String
+)

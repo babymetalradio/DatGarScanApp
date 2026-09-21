@@ -60,6 +60,14 @@ class SerieDetalleActivity : BaseActivity() {
             startActivity(MangaInfoActivity.crearIntent(this, slugActual))
         }
 
+        binding.tvReportar.setOnClickListener {
+            if (!com.datgarscan.app.webapi.SesionManager.estaLogueado()) {
+                Toast.makeText(this, "Inicia sesión para reportar.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            mostrarDialogoReporte(mangaTitleActual)
+        }
+
         adapter = CapituloAdapter(
             onClick = { capitulo -> startActivity(LectorActivity.crearIntent(this, capitulo.id)) },
             onDescargar = { capitulo -> descargarCapitulo(capitulo) },
@@ -245,4 +253,69 @@ class SerieDetalleActivity : BaseActivity() {
             .setNegativeButton("Cancelar", null)
             .show()
     }
+    private fun mostrarDialogoReporte(mangaPrellenado: String = "") {
+        val contenedor = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(40, 20, 40, 10)
+        }
+
+        val etAsunto = android.widget.EditText(this).apply {
+            hint = "Asunto (ej: Error al cargar, contenido incorrecto...)"
+            setPadding(30, 20, 30, 20)
+        }
+        val etManga = android.widget.EditText(this).apply {
+            hint = "Manga (opcional)"
+            setText(mangaPrellenado)
+            setPadding(30, 20, 30, 20)
+        }
+        val etReporte = android.widget.EditText(this).apply {
+            hint = "Describe el problema..."
+            minLines = 4
+            gravity = android.view.Gravity.TOP
+            setPadding(30, 20, 30, 20)
+        }
+
+        contenedor.addView(etAsunto)
+        contenedor.addView(etManga)
+        contenedor.addView(etReporte)
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Reportar un problema")
+            .setView(contenedor)
+            .setPositiveButton("Enviar") { _, _ ->
+                val asunto = etAsunto.text.toString().trim()
+                val manga = etManga.text.toString().trim()
+                val reporte = etReporte.text.toString().trim()
+
+                if (asunto.isBlank() || reporte.isBlank()) {
+                    Toast.makeText(this, "Asunto y reporte son obligatorios.", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                enviarReporte(asunto, manga, reporte)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun enviarReporte(asunto: String, manga: String, reporte: String) {
+        lifecycleScope.launch {
+            try {
+                val respuesta = WebApiClient.get().enviarReporte(
+                    com.datgarscan.app.webapi.ReporteRequest(asunto, manga, reporte)
+                )
+                Toast.makeText(
+                    this@SerieDetalleActivity,
+                    respuesta.message ?: if (respuesta.success) "Reporte enviado." else "No se pudo enviar.",
+                    Toast.LENGTH_LONG
+                ).show()
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@SerieDetalleActivity,
+                    com.datgarscan.app.webapi.ErroresRed.mensajeAmable(e),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
 }
