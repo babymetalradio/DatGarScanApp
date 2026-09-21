@@ -61,10 +61,6 @@ class SerieDetalleActivity : BaseActivity() {
         }
 
         binding.tvReportar.setOnClickListener {
-            if (!com.datgarscan.app.webapi.SesionManager.estaLogueado()) {
-                Toast.makeText(this, "Inicia sesión para reportar.", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
             mostrarDialogoReporte(mangaTitleActual)
         }
 

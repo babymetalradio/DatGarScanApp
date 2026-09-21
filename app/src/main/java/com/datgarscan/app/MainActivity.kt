@@ -587,12 +587,7 @@ class MainActivity : BaseActivity() {
 
         binding.menuReportar.setOnClickListener {
             cerrarMenu()
-            if (SesionManager.estaLogueado()) {
-                mostrarDialogoReporte()
-            } else {
-                Toast.makeText(this, "Inicia sesión para reportar.", Toast.LENGTH_SHORT).show()
-                loginLauncher.launch(LoginActivity.crearIntent(this))
-            }
+            mostrarDialogoReporte()
         }
 
         armarOpcionesOrden()
