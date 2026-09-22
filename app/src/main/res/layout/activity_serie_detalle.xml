@@ -112,15 +112,6 @@
 
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/tvMasInfo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:padding="8dp"
-                android:text="Mas info"
-                android:textColor="@color/accent"
-                android:textSize="12sp" />
 
         </LinearLayout>
 

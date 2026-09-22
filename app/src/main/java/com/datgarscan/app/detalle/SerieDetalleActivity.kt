@@ -40,6 +40,10 @@ class SerieDetalleActivity : BaseActivity() {
     private var mangaTitleActual: String = ""
     private var coverUrlActual: String? = null
     private var capitulosActuales: List<CapituloResumen> = emptyList()
+    private var descripcionActual: String = ""
+    private var generosActuales: String = ""
+    private var autorActual: String = ""
+    private var estadoActual: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,10 +60,6 @@ class SerieDetalleActivity : BaseActivity() {
 
         binding.tvVolver.setOnClickListener { finish() }
         binding.tvFavorito.setOnClickListener { alternarFavorito() }
-        binding.tvMasInfo.setOnClickListener {
-            startActivity(MangaInfoActivity.crearIntent(this, slugActual))
-        }
-
         binding.tvReportar.setOnClickListener {
             mostrarDialogoReporte(mangaTitleActual)
         }
@@ -146,16 +146,20 @@ class SerieDetalleActivity : BaseActivity() {
                 }
 
                 val descripcion = manga.description?.takeIf { it.isNotBlank() }
+                descripcionActual = descripcion ?: ""
+                generosActuales = manga.genres.joinToString(" · ")
+                autorActual = manga.author?.takeIf { it.isNotBlank() } ?: "Autor desconocido"
+                estadoActual = traducirEstado(manga.status)
+
                 if (descripcion != null) {
                     binding.tvDescripcionDetalle.visibility = View.VISIBLE
                     binding.tvDescripcionDetalle.text = descripcion
-
-                    // Tocar la descripcion la despliega completa y la vuelve a recortar
+                    binding.tvDescripcionDetalle.maxLines = 4
                     binding.tvDescripcionDetalle.setOnClickListener {
-                        val estaRecortada = binding.tvDescripcionDetalle.maxLines == 4
-                        binding.tvDescripcionDetalle.maxLines = if (estaRecortada) Int.MAX_VALUE else 4
+                        mostrarPopupInfoManga()
                     }
                 }
+
 
                 Glide.with(this@SerieDetalleActivity).load(manga.cover_url).into(binding.ivPortadaDetalle)
 
@@ -313,5 +317,111 @@ class SerieDetalleActivity : BaseActivity() {
             }
         }
     }
+
+    private fun traducirEstado(status: String?): String {
+        return when (status) {
+            "ongoing" -> "En curso"
+            "completed" -> "Completado"
+            "hiatus" -> "En pausa"
+            "cancelled" -> "Cancelado"
+            else -> status?.takeIf { it.isNotBlank() } ?: "Desconocido"
+        }
+    }
+
+    private fun mostrarPopupInfoManga() {
+        val densidad = resources.displayMetrics.density
+        fun dp(v: Int) = (v * densidad).toInt()
+
+        val contenedor = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(dp(16), dp(12), dp(16), dp(16))
+        }
+
+        val filaTitulo = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+
+        val tvTitulo = android.widget.TextView(this).apply {
+            layoutParams = android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            text = mangaTitleActual.ifBlank { "Información" }
+            setTextColor(resources.getColor(R.color.white, theme))
+            textSize = 16f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setPadding(0, 0, dp(8), 0)
+        }
+
+        val btnCerrar = android.widget.TextView(this).apply {
+            text = "✕"
+            setTextColor(resources.getColor(R.color.muted, theme))
+            textSize = 20f
+            setPadding(dp(12), dp(4), dp(4), dp(4))
+        }
+
+        filaTitulo.addView(tvTitulo)
+        filaTitulo.addView(btnCerrar)
+
+        val meta = buildString {
+            append("Autor: ").append(autorActual).append('\n')
+            append("Estado: ").append(estadoActual)
+            if (generosActuales.isNotBlank()) {
+                append('\n').append("Géneros: ").append(generosActuales)
+            }
+            append('\n').append("Capítulos: ").append(capitulosActuales.size)
+        }
+
+        val tvMeta = android.widget.TextView(this).apply {
+            text = meta
+            setTextColor(resources.getColor(R.color.accent, theme))
+            textSize = 13f
+            setPadding(0, dp(12), 0, dp(8))
+        }
+
+        val tvSinopsisLabel = android.widget.TextView(this).apply {
+            text = "Sinopsis"
+            setTextColor(resources.getColor(R.color.white, theme))
+            textSize = 14f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setPadding(0, dp(4), 0, dp(6))
+        }
+
+        val tvSinopsis = android.widget.TextView(this).apply {
+            text = descripcionActual.ifBlank { "Sin descripción todavía." }
+            setTextColor(resources.getColor(R.color.muted, theme))
+            textSize = 13f
+            setLineSpacing(0f, 1.15f)
+        }
+
+        val scroll = android.widget.ScrollView(this).apply {
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                (resources.displayMetrics.heightPixels * 0.55f).toInt()
+            )
+            isFillViewport = true
+            addView(tvSinopsis)
+        }
+
+        contenedor.addView(filaTitulo)
+        contenedor.addView(tvMeta)
+        contenedor.addView(tvSinopsisLabel)
+        contenedor.addView(scroll)
+
+        val dialogo = android.app.AlertDialog.Builder(this)
+            .setView(contenedor)
+            .create()
+
+        btnCerrar.setOnClickListener { dialogo.dismiss() }
+        dialogo.setCanceledOnTouchOutside(true)
+        dialogo.show()
+
+        dialogo.window?.setBackgroundDrawable(
+            android.graphics.drawable.ColorDrawable(resources.getColor(R.color.surface, theme))
+        )
+        dialogo.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.92f).toInt(),
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+    }
+
 
 }
