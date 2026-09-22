@@ -566,6 +566,16 @@
                 android:textColor="@color/white"
                 android:textSize="14sp" />
 
+            <TextView
+                android:id="@+id/menuReportar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="14dp"
+                android:text="Reportar un problema"
+                android:textColor="@color/white"
+                android:textSize="14sp" />
+
             <com.startapp.sdk.ads.banner.Banner
                 android:id="@+id/bannerMenu"
                 android:layout_width="wrap_content"
