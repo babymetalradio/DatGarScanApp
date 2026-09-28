@@ -33,6 +33,8 @@ class DatGarMessagingService : FirebaseMessagingService() {
         val titulo = message.data["titulo"] ?: message.notification?.title ?: "Nuevo capítulo"
         val cuerpo = message.data["cuerpo"] ?: message.notification?.body ?: ""
         val slug = message.data["manga_slug"]
+        // Link externo opcional (web, boletos, etc.)
+        val linkUrl = message.data["link_url"] ?: message.data["url"]
 
         // Siempre entra por MainActivity, nunca directo a la pantalla del manga:
         // MainActivity es quien sabe resolver el desafío anti-bot del hosting
@@ -40,8 +42,13 @@ class DatGarMessagingService : FirebaseMessagingService() {
         // directo (con la app cerrada), esa pantalla pediría datos antes de
         // que la conexión esté lista y fallaría.
         val intent = Intent(this, MainActivity::class.java)
-        if (!slug.isNullOrBlank()) {
-            intent.putExtra(MainActivity.EXTRA_ABRIR_MANGA_SLUG, slug)
+        when {
+            !linkUrl.isNullOrBlank() -> {
+                intent.putExtra(MainActivity.EXTRA_ABRIR_URL, linkUrl)
+            }
+            !slug.isNullOrBlank() -> {
+                intent.putExtra(MainActivity.EXTRA_ABRIR_MANGA_SLUG, slug)
+            }
         }
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
 

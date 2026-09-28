@@ -33,6 +33,7 @@ class MainActivity : BaseActivity() {
 
     companion object {
         const val EXTRA_ABRIR_MANGA_SLUG = "extra_abrir_manga_slug"
+        const val EXTRA_ABRIR_URL = "extra_abrir_url"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -146,12 +147,7 @@ class MainActivity : BaseActivity() {
                 try { sincronizarGarritas() } catch (e: Throwable) {}
                 try { revisarVersionNueva() } catch (e: Throwable) {}
 
-                val slugDesdeNotificacion = intent.getStringExtra(EXTRA_ABRIR_MANGA_SLUG)
-                if (!slugDesdeNotificacion.isNullOrBlank()) {
-                    try {
-                        startActivity(SerieDetalleActivity.crearIntent(this@MainActivity, slugDesdeNotificacion))
-                    } catch (e: Throwable) {}
-                }
+                procesarExtrasNotificacion(intent)
             }
         }
     }
@@ -180,12 +176,33 @@ class MainActivity : BaseActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         if (com.datgarscan.app.webapi.ChallengeResolver.resuelto) {
-            val slugDesdeNotificacion = intent.getStringExtra(EXTRA_ABRIR_MANGA_SLUG)
-            if (!slugDesdeNotificacion.isNullOrBlank()) {
-                startActivity(SerieDetalleActivity.crearIntent(this, slugDesdeNotificacion))
-            }
+            procesarExtrasNotificacion(intent)
         }
     }
+
+
+    /** Abre link externo o manga según extras de la notificación FCM. */
+    private fun procesarExtrasNotificacion(intent: android.content.Intent?) {
+        if (intent == null) return
+        val url = intent.getStringExtra(EXTRA_ABRIR_URL)
+        if (!url.isNullOrBlank()) {
+            intent.removeExtra(EXTRA_ABRIR_URL)
+            try {
+                startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+            } catch (e: Exception) {
+                Toast.makeText(this, "No se pudo abrir el enlace.", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+        val slug = intent.getStringExtra(EXTRA_ABRIR_MANGA_SLUG)
+        if (!slug.isNullOrBlank()) {
+            intent.removeExtra(EXTRA_ABRIR_MANGA_SLUG)
+            try {
+                startActivity(SerieDetalleActivity.crearIntent(this, slug))
+            } catch (e: Throwable) { }
+        }
+    }
+
 
     private fun cargarContinuarLeyendo() {
         if (!SesionManager.estaLogueado()) {
