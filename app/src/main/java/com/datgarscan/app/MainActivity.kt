@@ -1,7 +1,10 @@
 package com.datgarscan.app
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.os.CountDownTimer
+import android.net.Uri
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
@@ -33,6 +36,9 @@ class MainActivity : BaseActivity() {
     }
 
     private lateinit var binding: ActivityMainBinding
+
+    private var countDownEvento: CountDownTimer? = null
+    private val urlBoletosEvento = "https://funticket.mx/evento/bby-mtal-cdmx/"
     private lateinit var adapter: MangaAdapter
 
     private var catalogoCompleto: List<MangaResumen> = emptyList()
@@ -44,6 +50,7 @@ class MainActivity : BaseActivity() {
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
     ) {
         actualizarEstadoSesion()
+        iniciarBannerEvento()
         cargarContinuarLeyendo()
         com.datgarscan.app.notificaciones.NotificacionesManager.registrarSiHaySesion(this)
         sincronizarGarritas()
@@ -731,5 +738,135 @@ class MainActivity : BaseActivity() {
             }
         }
     }
+
+    override fun onDestroy() {
+        countDownEvento?.cancel()
+        super.onDestroy()
+    }
+
+    /** Banner BABYMETAL CDMX hasta el 12 dic 2026 (hora Ciudad de México). */
+    private fun iniciarBannerEvento() {
+        // 12 diciembre 2026 23:59:59 America/Mexico_City = UTC-6
+        val finMillis = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("America/Mexico_City")).apply {
+            set(2026, java.util.Calendar.DECEMBER, 12, 23, 59, 59)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        val resto = finMillis - System.currentTimeMillis()
+        if (resto <= 0L) {
+            binding.bannerEvento.visibility = View.GONE
+            return
+        }
+
+        binding.bannerEvento.visibility = View.VISIBLE
+        binding.bannerEvento.setOnClickListener { mostrarPopupEvento() }
+        binding.btnComprarBoletos.setOnClickListener { abrirUrlBoletos() }
+
+        countDownEvento?.cancel()
+        countDownEvento = object : CountDownTimer(resto, 1000L) {
+            override fun onTick(millisUntilFinished: Long) {
+                binding.tvEventoCountdown.text = "BABYMETAL CDMX · ${formatearCountdown(millisUntilFinished)}"
+            }
+
+            override fun onFinish() {
+                binding.bannerEvento.visibility = View.GONE
+            }
+        }.start()
+    }
+
+    private fun formatearCountdown(ms: Long): String {
+        var s = ms / 1000
+        val dias = s / 86400
+        s %= 86400
+        val horas = s / 3600
+        s %= 3600
+        val min = s / 60
+        val seg = s % 60
+        return if (dias > 0) {
+            String.format("%dd %02d:%02d:%02d", dias, horas, min, seg)
+        } else {
+            String.format("%02d:%02d:%02d", horas, min, seg)
+        }
+    }
+
+    private fun mostrarPopupEvento() {
+        val densidad = resources.displayMetrics.density
+        fun dp(v: Int) = (v * densidad).toInt()
+
+        val contenedor = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+        }
+
+        val filaTop = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.END
+        }
+        val btnX = android.widget.TextView(this).apply {
+            text = "✕"
+            setTextColor(resources.getColor(R.color.muted, theme))
+            textSize = 20f
+            setPadding(dp(8), dp(4), dp(4), dp(8))
+        }
+        filaTop.addView(btnX)
+
+        val imagen = android.widget.ImageView(this).apply {
+            setImageResource(R.drawable.evento_babymetal_cdmx)
+            adjustViewBounds = true
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                (resources.displayMetrics.heightPixels * 0.55f).toInt()
+            )
+        }
+
+        val btnComprar = android.widget.TextView(this).apply {
+            text = "Comprar boletos"
+            gravity = android.view.Gravity.CENTER
+            setTextColor(resources.getColor(R.color.white, theme))
+            textSize = 14f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setBackgroundResource(R.drawable.bg_boton_gradiente)
+            val lp = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            lp.topMargin = dp(12)
+            layoutParams = lp
+        }
+
+        contenedor.addView(filaTop)
+        contenedor.addView(imagen)
+        contenedor.addView(btnComprar)
+
+        val dialogo = android.app.AlertDialog.Builder(this)
+            .setView(contenedor)
+            .create()
+
+        btnX.setOnClickListener { dialogo.dismiss() }
+        btnComprar.setOnClickListener {
+            dialogo.dismiss()
+            abrirUrlBoletos()
+        }
+        dialogo.setCanceledOnTouchOutside(true)
+        dialogo.show()
+        dialogo.window?.setBackgroundDrawable(
+            android.graphics.drawable.ColorDrawable(resources.getColor(R.color.surface, theme))
+        )
+        dialogo.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.92f).toInt(),
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+    }
+
+    private fun abrirUrlBoletos() {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(urlBoletosEvento)))
+        } catch (e: Exception) {
+            Toast.makeText(this, "No se pudo abrir el enlace de boletos.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
 
 }
