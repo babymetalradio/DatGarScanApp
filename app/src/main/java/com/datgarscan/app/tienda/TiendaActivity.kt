@@ -38,9 +38,6 @@ class TiendaActivity : BaseActivity() {
         binding = ActivityTiendaBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Asegura que el token en memoria esté cargado desde prefs
-        SesionManager.cargar(this)
-
         if (!SesionManager.estaLogueado()) {
             Toast.makeText(this, "Inicia sesión para usar la tienda.", Toast.LENGTH_SHORT).show()
             finish()
@@ -68,49 +65,9 @@ class TiendaActivity : BaseActivity() {
         lifecycleScope.launch {
             try {
                 val estado = WebApiClient.get().estadoGarritas()
-                if (!estado.success && !SesionManager.estaLogueado()) {
-                    // Token invalidado por interceptor 401
-                    Toast.makeText(
-                        this@TiendaActivity,
-                        "Tu sesión expiró. Vuelve a iniciar sesión.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    finish()
-                    return@launch
-                }
                 pintarEstado(estado)
-            } catch (e: retrofit2.HttpException) {
-                if (e.code() == 401) {
-                    SesionManager.cerrarSesion(this@TiendaActivity)
-                    Toast.makeText(
-                        this@TiendaActivity,
-                        "Tu sesión expiró. Vuelve a iniciar sesión.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    finish()
-                } else {
-                    Toast.makeText(
-                        this@TiendaActivity,
-                        com.datgarscan.app.webapi.ErroresRed.mensajeAmable(e),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
             } catch (e: Exception) {
-                // Por si el interceptor ya limpió el token en un 401 envuelto
-                if (!SesionManager.estaLogueado()) {
-                    Toast.makeText(
-                        this@TiendaActivity,
-                        "Tu sesión expiró. Vuelve a iniciar sesión.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    finish()
-                } else {
-                    Toast.makeText(
-                        this@TiendaActivity,
-                        com.datgarscan.app.webapi.ErroresRed.mensajeAmable(e),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+                Toast.makeText(this@TiendaActivity, com.datgarscan.app.webapi.ErroresRed.mensajeAmable(e), Toast.LENGTH_SHORT).show()
             }
         }
     }

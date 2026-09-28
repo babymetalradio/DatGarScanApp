@@ -13,8 +13,8 @@ object AnunciosManager {
     private const val PREFS = "datgar_ads"
     private const val KEY_CONTADOR = "capitulos_abiertos"
     private const val KEY_CONTADOR_SALIDA = "salidas_lector"
-    private const val CADA_CUANTOS_CAPITULOS = 2
-    private const val CADA_CUANTAS_SALIDAS = 2
+    private const val CADA_CUANTOS_CAPITULOS = 1  // más anuncios: cada capítulo
+    private const val CADA_CUANTAS_SALIDAS = 2  // se mantiene en 2 para no apilar con el de entrada
 
     /**
      * Suma uno al contador y, si toca, muestra el intersticial.
