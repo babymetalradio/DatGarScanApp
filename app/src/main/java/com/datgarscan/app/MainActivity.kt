@@ -98,6 +98,7 @@ class MainActivity : BaseActivity() {
             }
         }
         actualizarEstadoSesion()
+        iniciarBannerEvento()
 
         binding.etBuscar.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -797,32 +798,26 @@ class MainActivity : BaseActivity() {
             val densidad = resources.displayMetrics.density
             fun dp(v: Int) = (v * densidad).toInt()
 
-            val scroll = android.widget.ScrollView(this)
-            val contenedor = android.widget.LinearLayout(this).apply {
+            val scroll = android.widget.ScrollView(this).apply {
+                setPadding(dp(8), dp(8), dp(8), dp(8))
+            }
+            val box = android.widget.LinearLayout(this).apply {
                 orientation = android.widget.LinearLayout.VERTICAL
-                setPadding(dp(12), dp(12), dp(12), dp(12))
+                setPadding(dp(12), dp(8), dp(12), dp(12))
             }
 
-            val filaTop = android.widget.LinearLayout(this).apply {
-                orientation = android.widget.LinearLayout.HORIZONTAL
+            val btnX = android.widget.TextView(this).apply {
+                text = "✕  Cerrar"
+                setTextColor(0xFFCCCCCC.toInt())
+                textSize = 14f
+                setPadding(0, 0, 0, dp(8))
                 gravity = android.view.Gravity.END
             }
-            val btnX = android.widget.TextView(this).apply {
-                text = "✕"
-                setTextColor(0xFFAAAAAA.toInt())
-                textSize = 22f
-                setPadding(dp(12), dp(4), dp(4), dp(8))
-            }
-            filaTop.addView(btnX)
 
             val imagen = android.widget.ImageView(this).apply {
-                setImageResource(R.drawable.evento_babymetal_cdmx)
                 adjustViewBounds = true
                 scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-                layoutParams = android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                )
+                setImageResource(R.drawable.evento_babymetal_cdmx)
             }
 
             val btnComprar = android.widget.TextView(this).apply {
@@ -832,11 +827,7 @@ class MainActivity : BaseActivity() {
                 textSize = 15f
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 setPadding(dp(14), dp(14), dp(14), dp(14))
-                try {
-                    setBackgroundResource(R.drawable.bg_boton_gradiente)
-                } catch (_: Exception) {
-                    setBackgroundColor(0xFFE91E8C.toInt())
-                }
+                setBackgroundColor(0xFFE91E8C.toInt())
                 val lp = android.widget.LinearLayout.LayoutParams(
                     android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
                     android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
@@ -845,32 +836,30 @@ class MainActivity : BaseActivity() {
                 layoutParams = lp
             }
 
-            contenedor.addView(filaTop)
-            contenedor.addView(imagen)
-            contenedor.addView(btnComprar)
-            scroll.addView(contenedor)
+            box.addView(btnX)
+            box.addView(imagen)
+            box.addView(btnComprar)
+            scroll.addView(box)
 
-            val dialogo = androidx.appcompat.app.AlertDialog.Builder(this)
-                .setView(scroll)
-                .create()
-
-            btnX.setOnClickListener { dialogo.dismiss() }
-            btnComprar.setOnClickListener {
-                dialogo.dismiss()
-                abrirUrlBoletos()
-            }
-            dialogo.setCanceledOnTouchOutside(true)
-            dialogo.show()
-            dialogo.window?.setBackgroundDrawable(
+            val dialog = android.app.Dialog(this)
+            dialog.setContentView(scroll)
+            dialog.setCancelable(true)
+            dialog.setCanceledOnTouchOutside(true)
+            dialog.window?.setBackgroundDrawable(
                 android.graphics.drawable.ColorDrawable(0xFF1A1520.toInt())
             )
-            dialogo.window?.setLayout(
+            dialog.window?.setLayout(
                 (resources.displayMetrics.widthPixels * 0.92f).toInt(),
                 android.view.ViewGroup.LayoutParams.WRAP_CONTENT
             )
+            btnX.setOnClickListener { dialog.dismiss() }
+            btnComprar.setOnClickListener {
+                dialog.dismiss()
+                abrirUrlBoletos()
+            }
+            dialog.show()
         } catch (e: Exception) {
-            Toast.makeText(this, "No se pudo abrir el evento: ${e.message}", Toast.LENGTH_LONG).show()
-            // Si el popup falla, al menos abre los boletos
+            Toast.makeText(this, "Evento: ${e.message}", Toast.LENGTH_LONG).show()
             abrirUrlBoletos()
         }
     }
