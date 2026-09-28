@@ -131,11 +131,14 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
+                android:paddingVertical="4dp"
                 android:textColor="@color/white"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:maxLines="1"
                 android:ellipsize="end"
+                android:clickable="true"
+                android:focusable="true"
                 android:text="BABYMETAL CDMX · --:--:--" />
 
             <TextView
