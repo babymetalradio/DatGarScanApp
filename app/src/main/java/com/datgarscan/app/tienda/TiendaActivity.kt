@@ -38,6 +38,9 @@ class TiendaActivity : BaseActivity() {
         binding = ActivityTiendaBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Asegura que el token en memoria esté cargado desde prefs
+        SesionManager.cargar(this)
+
         if (!SesionManager.estaLogueado()) {
             Toast.makeText(this, "Inicia sesión para usar la tienda.", Toast.LENGTH_SHORT).show()
             finish()
@@ -65,9 +68,49 @@ class TiendaActivity : BaseActivity() {
         lifecycleScope.launch {
             try {
                 val estado = WebApiClient.get().estadoGarritas()
+                if (!estado.success && !SesionManager.estaLogueado()) {
+                    // Token invalidado por interceptor 401
+                    Toast.makeText(
+                        this@TiendaActivity,
+                        "Tu sesión expiró. Vuelve a iniciar sesión.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    finish()
+                    return@launch
+                }
                 pintarEstado(estado)
+            } catch (e: retrofit2.HttpException) {
+                if (e.code() == 401) {
+                    SesionManager.cerrarSesion(this@TiendaActivity)
+                    Toast.makeText(
+                        this@TiendaActivity,
+                        "Tu sesión expiró. Vuelve a iniciar sesión.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    finish()
+                } else {
+                    Toast.makeText(
+                        this@TiendaActivity,
+                        com.datgarscan.app.webapi.ErroresRed.mensajeAmable(e),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             } catch (e: Exception) {
-                Toast.makeText(this@TiendaActivity, com.datgarscan.app.webapi.ErroresRed.mensajeAmable(e), Toast.LENGTH_SHORT).show()
+                // Por si el interceptor ya limpió el token en un 401 envuelto
+                if (!SesionManager.estaLogueado()) {
+                    Toast.makeText(
+                        this@TiendaActivity,
+                        "Tu sesión expiró. Vuelve a iniciar sesión.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    finish()
+                } else {
+                    Toast.makeText(
+                        this@TiendaActivity,
+                        com.datgarscan.app.webapi.ErroresRed.mensajeAmable(e),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
     }
@@ -129,7 +172,8 @@ class TiendaActivity : BaseActivity() {
     private fun prepararAnuncioRecompensado() {
         anuncioListo = false
         val anuncio = StartAppAd(this)
-        anuncio.loadAd(object : AdEventListener {
+        // Preferir video recompensado (más fill de red y recompensa clara)
+        anuncio.loadAd(StartAppAd.AdMode.REWARDED_VIDEO, object : AdEventListener {
             override fun onReceiveAd(ad: Ad) {
                 anuncioListo = true
                 intentosFallidos = 0
@@ -137,17 +181,28 @@ class TiendaActivity : BaseActivity() {
             }
 
             override fun onFailedToReceiveAd(ad: Ad?) {
-                anuncioListo = false
-                intentosFallidos++
-                runOnUiThread {
-                    if (intentosFallidos >= 3) {
-                        binding.btnVerAnuncio.visibility = View.GONE
-                    } else {
-                        binding.btnVerAnuncio.text = "No hay anuncios ahora. Toca para reintentar."
-                        binding.btnVerAnuncio.isEnabled = true
-                        binding.btnVerAnuncio.alpha = 1f
+                // Fallback: intersticial normal si no hay rewarded disponible
+                anuncio.loadAd(object : AdEventListener {
+                    override fun onReceiveAd(ad: Ad) {
+                        anuncioListo = true
+                        intentosFallidos = 0
+                        runOnUiThread { actualizarBotonAnuncio() }
                     }
-                }
+
+                    override fun onFailedToReceiveAd(ad: Ad?) {
+                        anuncioListo = false
+                        intentosFallidos++
+                        runOnUiThread {
+                            if (intentosFallidos >= 3) {
+                                binding.btnVerAnuncio.visibility = View.GONE
+                            } else {
+                                binding.btnVerAnuncio.text = "No hay anuncios ahora. Toca para reintentar."
+                                binding.btnVerAnuncio.isEnabled = true
+                                binding.btnVerAnuncio.alpha = 1f
+                            }
+                        }
+                    }
+                })
             }
         })
         anuncioStartApp = anuncio
@@ -163,23 +218,34 @@ class TiendaActivity : BaseActivity() {
         }
 
         momentoMostrado = System.currentTimeMillis()
+        var recompensaOtorgada = false
+
+        // Callback oficial de video completado (StartApp rewarded)
+        anuncio.setVideoListener {
+            if (!recompensaOtorgada) {
+                recompensaOtorgada = true
+                otorgarGarritasPorAnuncio()
+            }
+        }
 
         anuncio.showAd(object : com.startapp.sdk.adsbase.adlisteners.AdDisplayListener {
             override fun adHidden(ad: Ad) {
-                // Se otorgan las garritas solo si el anuncio estuvo abierto un
-                // minimo de tiempo, para que no cuente si lo cierran al instante.
-                val segundos = (System.currentTimeMillis() - momentoMostrado) / 1000
-                if (segundos >= SEGUNDOS_MINIMOS) {
-                    otorgarGarritasPorAnuncio()
-                } else {
-                    runOnUiThread {
-                        Toast.makeText(
-                            this@TiendaActivity,
-                            "Debes ver el anuncio completo para ganar garritas.",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                // Si no hubo callback de video (fallback intersticial), usa tiempo mínimo
+                if (!recompensaOtorgada) {
+                    val segundos = (System.currentTimeMillis() - momentoMostrado) / 1000
+                    if (segundos >= SEGUNDOS_MINIMOS) {
+                        recompensaOtorgada = true
+                        otorgarGarritasPorAnuncio()
+                    } else {
+                        runOnUiThread {
+                            Toast.makeText(
+                                this@TiendaActivity,
+                                "Debes ver el anuncio completo para ganar garritas.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        prepararAnuncioRecompensado()
                     }
-                    prepararAnuncioRecompensado()
                 }
             }
 
@@ -215,7 +281,7 @@ class TiendaActivity : BaseActivity() {
         binding.btnVerAnuncio.text = when {
             anunciosQuedanHoy <= 0 -> "Ya viste todos los anuncios de hoy"
             !anuncioListo -> "Preparando anuncio..."
-            else -> "Ver un anuncio · +$garritasPorAnuncio garritas  (te quedan $anunciosQuedanHoy hoy)"
+            else -> "Ver video · +$garritasPorAnuncio garritas  (te quedan $anunciosQuedanHoy hoy)"
         }
         binding.btnVerAnuncio.isEnabled = anunciosQuedanHoy > 0
         binding.btnVerAnuncio.alpha = if (anunciosQuedanHoy > 0 && anuncioListo) 1f else 0.5f

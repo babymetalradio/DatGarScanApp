@@ -53,14 +53,26 @@ object WebApiClient {
                 .header("Referer", SITE_URL)
                 .header("User-Agent", userAgent)
             SesionManager.tokenEnMemoria?.let { token ->
-                builder.header("Authorization", "Bearer $token")
+                if (token.isNotBlank()) {
+                    builder.header("Authorization", "Bearer $token")
+                }
             }
             chain.proceed(builder.build())
+        }
+
+        // Si el servidor dice 401, el token ya no vale: limpia la sesión local
+        val authInterceptor = Interceptor { chain ->
+            val response = chain.proceed(chain.request())
+            if (response.code == 401) {
+                SesionManager.cerrarSesionPor401()
+            }
+            response
         }
 
         return OkHttpClient.Builder()
             .cookieJar(WebViewCookieJar())
             .addInterceptor(headersInterceptor)
+            .addInterceptor(authInterceptor)
             .addInterceptor(logging)
             .connectTimeout(20, TimeUnit.SECONDS)
             .readTimeout(20, TimeUnit.SECONDS)
