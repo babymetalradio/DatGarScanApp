@@ -1,5 +1,7 @@
 package com.datgarscan.app
 
+import com.datgarscan.app.ads.UnityAdsManager
+
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -84,6 +86,8 @@ class MainActivity : BaseActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        try { UnityAdsManager.inicializar(this) } catch (_: Throwable) {}
+
         binding.overlaySync.visibility = View.VISIBLE
         binding.ivPawLoading.startAnimation(AnimationUtils.loadAnimation(this, R.anim.pulse_garrita))
         binding.tvSyncVersion.text = "v${BuildConfig.VERSION_NAME}"
@@ -100,6 +104,8 @@ class MainActivity : BaseActivity() {
         binding.rvSeries.adapter = adapter
 
         com.datgarscan.app.ads.AnunciosManager.ocultarBannersSiCorresponde(this, binding.bannerAds, binding.bannerMenu)
+        com.datgarscan.app.ads.AnunciosManager.cargarBanner(this, binding.bannerAds)
+        com.datgarscan.app.ads.AnunciosManager.cargarBanner(this, binding.bannerMenu)
 
         binding.tvActualizar.setOnClickListener { recargarTodo() }
         binding.tvReintentar.setOnClickListener { recargarTodo() }

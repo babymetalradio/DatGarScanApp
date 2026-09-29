@@ -15,9 +15,7 @@ import com.datgarscan.app.webapi.CodigoRequest
 import com.datgarscan.app.webapi.GarritasEstado
 import com.datgarscan.app.webapi.SesionManager
 import com.datgarscan.app.webapi.WebApiClient
-import com.startapp.sdk.adsbase.Ad
-import com.startapp.sdk.adsbase.StartAppAd
-import com.startapp.sdk.adsbase.adlisteners.AdEventListener
+import com.datgarscan.app.ads.UnityAdsManager
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -31,7 +29,6 @@ class TiendaActivity : BaseActivity() {
     }
 
     private lateinit var binding: ActivityTiendaBinding
-    private var anuncioStartApp: StartAppAd? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -127,94 +124,35 @@ class TiendaActivity : BaseActivity() {
     private var momentoMostrado = 0L
 
     private fun prepararAnuncioRecompensado() {
-        anuncioListo = false
-        val anuncio = StartAppAd(this)
-        // Preferir video recompensado (más fill de red y recompensa clara)
-        anuncio.loadAd(StartAppAd.AdMode.REWARDED_VIDEO, object : AdEventListener {
-            override fun onReceiveAd(ad: Ad) {
-                anuncioListo = true
-                intentosFallidos = 0
-                runOnUiThread { actualizarBotonAnuncio() }
-            }
-
-            override fun onFailedToReceiveAd(ad: Ad?) {
-                // Fallback: intersticial normal si no hay rewarded disponible
-                anuncio.loadAd(object : AdEventListener {
-                    override fun onReceiveAd(ad: Ad) {
-                        anuncioListo = true
-                        intentosFallidos = 0
-                        runOnUiThread { actualizarBotonAnuncio() }
-                    }
-
-                    override fun onFailedToReceiveAd(ad: Ad?) {
-                        anuncioListo = false
-                        intentosFallidos++
-                        runOnUiThread {
-                            if (intentosFallidos >= 3) {
-                                binding.btnVerAnuncio.visibility = View.GONE
-                            } else {
-                                binding.btnVerAnuncio.text = "No hay anuncios ahora. Toca para reintentar."
-                                binding.btnVerAnuncio.isEnabled = true
-                                binding.btnVerAnuncio.alpha = 1f
-                            }
-                        }
-                    }
-                })
-            }
-        })
-        anuncioStartApp = anuncio
+        anuncioListo = UnityAdsManager.rewardedListo()
+        if (!anuncioListo) {
+            UnityAdsManager.precargarRewarded()
+            binding.root.postDelayed({
+                anuncioListo = UnityAdsManager.rewardedListo()
+                actualizarBotonAnuncio()
+            }, 2000)
+        }
+        actualizarBotonAnuncio()
     }
 
     private fun mostrarAnuncioRecompensado() {
-        val anuncio = anuncioStartApp
-
-        if (anuncio == null || !anuncioListo) {
+        if (anunciosQuedanHoy <= 0) {
+            Toast.makeText(this, "Ya viste todos los anuncios de hoy.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!UnityAdsManager.rewardedListo()) {
             Toast.makeText(this, "Preparando el anuncio, espera unos segundos...", Toast.LENGTH_SHORT).show()
             prepararAnuncioRecompensado()
             return
         }
-
-        momentoMostrado = System.currentTimeMillis()
-        var recompensaOtorgada = false
-
-        // Callback oficial de video completado (StartApp rewarded)
-        anuncio.setVideoListener {
-            if (!recompensaOtorgada) {
-                recompensaOtorgada = true
-                otorgarGarritasPorAnuncio()
-            }
-        }
-
-        anuncio.showAd(object : com.startapp.sdk.adsbase.adlisteners.AdDisplayListener {
-            override fun adHidden(ad: Ad) {
-                // Si no hubo callback de video (fallback intersticial), usa tiempo mínimo
-                if (!recompensaOtorgada) {
-                    val segundos = (System.currentTimeMillis() - momentoMostrado) / 1000
-                    if (segundos >= SEGUNDOS_MINIMOS) {
-                        recompensaOtorgada = true
-                        otorgarGarritasPorAnuncio()
-                    } else {
-                        runOnUiThread {
-                            Toast.makeText(
-                                this@TiendaActivity,
-                                "Debes ver el anuncio completo para ganar garritas.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                        prepararAnuncioRecompensado()
-                    }
-                }
-            }
-
-            override fun adDisplayed(ad: Ad) {}
-            override fun adClicked(ad: Ad) {}
-            override fun adNotDisplayed(ad: Ad) {
-                runOnUiThread {
-                    Toast.makeText(this@TiendaActivity, "No se pudo mostrar el anuncio.", Toast.LENGTH_SHORT).show()
-                }
+        UnityAdsManager.mostrarRewarded(
+            this,
+            onCompletado = { otorgarGarritasPorAnuncio() },
+            onFallido = {
+                Toast.makeText(this, "No hay anuncios ahora. Intenta de nuevo.", Toast.LENGTH_SHORT).show()
                 prepararAnuncioRecompensado()
             }
-        })
+        )
     }
 
     private fun otorgarGarritasPorAnuncio() {

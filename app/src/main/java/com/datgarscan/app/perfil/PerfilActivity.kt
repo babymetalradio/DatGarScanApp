@@ -30,6 +30,7 @@ class PerfilActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityPerfilBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        try { com.datgarscan.app.ads.AnunciosManager.cargarBanner(this, binding.bannerPerfil) } catch (_: Throwable) {}
 
         if (!SesionManager.estaLogueado()) {
             Toast.makeText(this, "Inicia sesión para ver tu perfil.", Toast.LENGTH_SHORT).show()
