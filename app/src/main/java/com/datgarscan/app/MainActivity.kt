@@ -25,6 +25,10 @@ import com.datgarscan.app.login.LoginActivity
 import com.datgarscan.app.webapi.MangaResumen
 import com.datgarscan.app.webapi.SesionManager
 import com.datgarscan.app.webapi.WebApiClient
+import com.datgarscan.app.radio.RadioPlayerService
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
+import android.os.Build
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -33,9 +37,17 @@ class MainActivity : BaseActivity() {
 
     companion object {
         const val EXTRA_ABRIR_MANGA_SLUG = "extra_abrir_manga_slug"
+        const val EXTRA_ABRIR_URL = "extra_abrir_url"
     }
 
     private lateinit var binding: ActivityMainBinding
+
+    private val radioStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            actualizarFabRadio(intent?.getBooleanExtra(RadioPlayerService.EXTRA_PLAYING, false) == true)
+        }
+    }
+
 
     private var countDownEvento: CountDownTimer? = null
     private val urlBoletosEvento = "https://funticket.mx/evento/bby-mtal-cdmx/"
@@ -51,6 +63,7 @@ class MainActivity : BaseActivity() {
     ) {
         actualizarEstadoSesion()
         iniciarBannerEvento()
+        configurarFabRadio()
         cargarContinuarLeyendo()
         com.datgarscan.app.notificaciones.NotificacionesManager.registrarSiHaySesion(this)
         sincronizarGarritas()
@@ -146,12 +159,7 @@ class MainActivity : BaseActivity() {
                 try { sincronizarGarritas() } catch (e: Throwable) {}
                 try { revisarVersionNueva() } catch (e: Throwable) {}
 
-                val slugDesdeNotificacion = intent.getStringExtra(EXTRA_ABRIR_MANGA_SLUG)
-                if (!slugDesdeNotificacion.isNullOrBlank()) {
-                    try {
-                        startActivity(SerieDetalleActivity.crearIntent(this@MainActivity, slugDesdeNotificacion))
-                    } catch (e: Throwable) {}
-                }
+                procesarExtrasNotificacion(intent)
             }
         }
     }
@@ -180,12 +188,33 @@ class MainActivity : BaseActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         if (com.datgarscan.app.webapi.ChallengeResolver.resuelto) {
-            val slugDesdeNotificacion = intent.getStringExtra(EXTRA_ABRIR_MANGA_SLUG)
-            if (!slugDesdeNotificacion.isNullOrBlank()) {
-                startActivity(SerieDetalleActivity.crearIntent(this, slugDesdeNotificacion))
-            }
+            procesarExtrasNotificacion(intent)
         }
     }
+
+
+    /** Abre link externo o manga según extras de la notificación FCM. */
+    private fun procesarExtrasNotificacion(intent: android.content.Intent?) {
+        if (intent == null) return
+        val url = intent.getStringExtra(EXTRA_ABRIR_URL)
+        if (!url.isNullOrBlank()) {
+            intent.removeExtra(EXTRA_ABRIR_URL)
+            try {
+                startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+            } catch (e: Exception) {
+                Toast.makeText(this, "No se pudo abrir el enlace.", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+        val slug = intent.getStringExtra(EXTRA_ABRIR_MANGA_SLUG)
+        if (!slug.isNullOrBlank()) {
+            intent.removeExtra(EXTRA_ABRIR_MANGA_SLUG)
+            try {
+                startActivity(SerieDetalleActivity.crearIntent(this, slug))
+            } catch (e: Throwable) { }
+        }
+    }
+
 
     private fun cargarContinuarLeyendo() {
         if (!SesionManager.estaLogueado()) {
@@ -741,6 +770,8 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
+        try { unregisterReceiver(radioStateReceiver) } catch (_: Exception) {}
+
         countDownEvento?.cancel()
         super.onDestroy()
     }
@@ -870,6 +901,47 @@ class MainActivity : BaseActivity() {
         } catch (e: Exception) {
             Toast.makeText(this, "No se pudo abrir el enlace de boletos.", Toast.LENGTH_SHORT).show()
         }
+    }
+
+
+    private fun configurarFabRadio() {
+        try {
+            val filter = IntentFilter(RadioPlayerService.ACTION_STATE)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(radioStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                registerReceiver(radioStateReceiver, filter)
+            }
+        } catch (_: Exception) { }
+
+        actualizarFabRadio(RadioPlayerService.isPlaying)
+
+        binding.fabRadio.setOnClickListener {
+            RadioPlayerService.toggle(this)
+            // estado optimista; el broadcast confirma
+            actualizarFabRadio(!RadioPlayerService.isPlaying)
+        }
+        binding.fabRadio.setOnLongClickListener {
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://datgarscanlation.xyz/bmradio1/")))
+            } catch (e: Exception) {
+                Toast.makeText(this, "No se pudo abrir BMRadio1.", Toast.LENGTH_SHORT).show()
+            }
+            true
+        }
+    }
+
+    private fun actualizarFabRadio(playing: Boolean) {
+        try {
+            if (playing) {
+                binding.fabRadio.contentDescription = "Pausar BMRadio1"
+                // Icono de "pause" del sistema
+                binding.fabRadio.setImageResource(android.R.drawable.ic_media_pause)
+            } else {
+                binding.fabRadio.contentDescription = "Escuchar BMRadio1"
+                binding.fabRadio.setImageResource(android.R.drawable.ic_lock_silent_mode_off)
+            }
+        } catch (_: Exception) { }
     }
 
 
