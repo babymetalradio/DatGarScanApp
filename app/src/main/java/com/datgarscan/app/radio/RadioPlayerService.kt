@@ -58,7 +58,7 @@ class RadioPlayerService : Service() {
         when (intent?.action) {
             ACTION_PLAY, null -> play()
             ACTION_PAUSE -> pause()
-            ACTION_TOGGLE -> if (isPlaying) pause() else play()
+            ACTION_TOGGLE -> if (RadioPlayerService.isPlaying) pause() else play()
             ACTION_STOP -> {
                 pause()
                 stopForeground(STOP_FOREGROUND_REMOVE)
@@ -81,19 +81,19 @@ class RadioPlayerService : Service() {
                     setDataSource(STREAM_URL)
                     setOnPreparedListener {
                         start()
-                        isPlaying = true
+                        RadioPlayerService.isPlaying = true
                         startForeground(NOTIF_ID, buildNotification(true))
                         emitState()
                     }
                     setOnErrorListener { _, _, _ ->
-                        isPlaying = false
+                        RadioPlayerService.isPlaying = false
                         emitState()
                         releasePlayer()
                         true
                     }
                     setOnCompletionListener {
                         // streams en vivo no suelen completar; por si acaso
-                        isPlaying = false
+                        RadioPlayerService.isPlaying = false
                         emitState()
                     }
                     prepareAsync()
@@ -101,12 +101,12 @@ class RadioPlayerService : Service() {
                 startForeground(NOTIF_ID, buildNotification(false))
             } else {
                 player?.start()
-                isPlaying = true
+                RadioPlayerService.isPlaying = true
                 startForeground(NOTIF_ID, buildNotification(true))
                 emitState()
             }
         } catch (e: Exception) {
-            isPlaying = false
+            RadioPlayerService.isPlaying = false
             emitState()
             releasePlayer()
         }
@@ -116,7 +116,7 @@ class RadioPlayerService : Service() {
         try {
             player?.pause()
         } catch (_: Exception) { }
-        isPlaying = false
+        RadioPlayerService.isPlaying = false
         emitState()
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(NOTIF_ID, buildNotification(false))
@@ -128,11 +128,11 @@ class RadioPlayerService : Service() {
             player?.release()
         } catch (_: Exception) { }
         player = null
-        isPlaying = false
+        RadioPlayerService.isPlaying = false
     }
 
     private fun emitState() {
-        sendBroadcast(Intent(ACTION_STATE).putExtra(EXTRA_PLAYING, isPlaying).setPackage(packageName))
+        sendBroadcast(Intent(ACTION_STATE).putExtra(EXTRA_PLAYING, RadioPlayerService.isPlaying).setPackage(packageName))
     }
 
     private fun buildNotification(playing: Boolean): Notification {
