@@ -35,7 +35,6 @@ class RadioPlayerService : Service() {
         private const val NOTIF_ID = 91001
 
         @Volatile var isPlaying: Boolean = false
-            private set
 
         fun toggle(context: Context) {
             val i = Intent(context, RadioPlayerService::class.java).setAction(ACTION_TOGGLE)
