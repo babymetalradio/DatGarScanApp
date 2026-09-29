@@ -84,6 +84,7 @@ class SerieDetalleActivity : BaseActivity() {
         }
 
         com.datgarscan.app.ads.AnunciosManager.ocultarBannersSiCorresponde(this, binding.bannerAds)
+        com.datgarscan.app.ads.AnunciosManager.cargarBanner(this, binding.bannerAds)
 
         cargarDetalle(slug)
     }

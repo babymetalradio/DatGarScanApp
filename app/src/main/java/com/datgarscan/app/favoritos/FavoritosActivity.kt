@@ -41,6 +41,7 @@ class FavoritosActivity : BaseActivity() {
         binding.rvLista.adapter = adapter
 
         com.datgarscan.app.ads.AnunciosManager.ocultarBannersSiCorresponde(this, binding.bannerAds)
+        com.datgarscan.app.ads.AnunciosManager.cargarBanner(this, binding.bannerAds)
 
         cargar()
     }

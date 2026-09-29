@@ -39,6 +39,7 @@ class MangaInfoActivity : BaseActivity() {
 
         binding.tvVolver.setOnClickListener { finish() }
         com.datgarscan.app.ads.AnunciosManager.ocultarBannersSiCorresponde(this, binding.bannerAds)
+        com.datgarscan.app.ads.AnunciosManager.cargarBanner(this, binding.bannerAds)
 
         cargarInfo(slug)
     }

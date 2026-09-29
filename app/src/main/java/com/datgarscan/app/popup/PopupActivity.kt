@@ -53,6 +53,7 @@ class PopupActivity : BaseActivity() {
         binding.tvCerrar.setOnClickListener { finish() }
 
         com.datgarscan.app.ads.AnunciosManager.ocultarBannersSiCorresponde(this, binding.bannerPopup)
+        com.datgarscan.app.ads.AnunciosManager.cargarBanner(this, binding.bannerPopup)
 
         configurarWebView(titulo, mensaje)
 
