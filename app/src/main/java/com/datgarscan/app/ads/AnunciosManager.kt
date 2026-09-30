@@ -1,12 +1,12 @@
 package com.datgarscan.app.ads
 
-import android.app.Activity
 import android.content.Context
 import android.view.View
-import android.view.ViewGroup
+import com.startapp.sdk.adsbase.StartAppAd
 
 /**
- * Intersticiales y banners vía Unity Ads.
+ * Banners e intersticiales: StartApp.
+ * Rewarded (garritas): Unity Ads (ver UnityAdsManager / TiendaActivity).
  */
 object AnunciosManager {
 
@@ -23,7 +23,7 @@ object AnunciosManager {
             val contador = prefs.getInt(KEY_CONTADOR, 0) + 1
             if (contador >= CADA_CUANTOS_CAPITULOS) {
                 prefs.edit().putInt(KEY_CONTADOR, 0).apply()
-                UnityAdsManager.mostrarInterstitial(context)
+                mostrarIntersticial(context)
             } else {
                 prefs.edit().putInt(KEY_CONTADOR, contador).apply()
             }
@@ -37,11 +37,17 @@ object AnunciosManager {
             val contador = prefs.getInt(KEY_CONTADOR_SALIDA, 0) + 1
             if (contador >= CADA_CUANTAS_SALIDAS) {
                 prefs.edit().putInt(KEY_CONTADOR_SALIDA, 0).apply()
-                UnityAdsManager.mostrarInterstitial(context)
+                mostrarIntersticial(context)
             } else {
                 prefs.edit().putInt(KEY_CONTADOR_SALIDA, contador).apply()
             }
         } catch (_: Throwable) { }
+    }
+
+    private fun mostrarIntersticial(context: Context) {
+        try {
+            StartAppAd.showAd(context)
+        } catch (_: Exception) { }
     }
 
     fun ocultarBannersSiCorresponde(context: Context, vararg banners: View?) {
@@ -51,7 +57,8 @@ object AnunciosManager {
         } catch (_: Throwable) { }
     }
 
-    fun cargarBanner(activity: Activity, container: ViewGroup?) {
-        UnityAdsManager.cargarBanner(activity, container)
+    /** Los banners StartApp se cargan solos en el layout; no hace falta nada aquí. */
+    fun cargarBanner(context: Context, container: View?) {
+        // no-op: StartApp Banner en XML se auto-carga
     }
 }

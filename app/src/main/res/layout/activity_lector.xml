@@ -119,14 +119,13 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:visibility="visible" />
 
-    <FrameLayout
+    <com.startapp.sdk.ads.banner.Banner
         android:id="@+id/bannerLector"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" 
-            android:minHeight="50dp" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <LinearLayout
         android:id="@+id/bottomBar"
