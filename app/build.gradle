@@ -18,8 +18,8 @@ android {
         applicationId "com.datgarscan.app"
         minSdk 24
         targetSdk 34
-        versionCode 7
-        versionName "1.9.9.1"
+        versionCode 8
+        versionName "1.9.9.2"
     }
 
     signingConfigs {
