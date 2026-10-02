@@ -75,6 +75,7 @@ class MainActivity : BaseActivity() {
         setContentView(binding.root)
 
         try { UnityAdsManager.inicializar(this) } catch (_: Throwable) {}
+        try { com.datgarscan.app.ads.AnunciosManager.inicializar(this) } catch (_: Throwable) {}
 
         binding.overlaySync.visibility = View.VISIBLE
         binding.ivPawLoading.startAnimation(AnimationUtils.loadAnimation(this, R.anim.pulse_garrita))
