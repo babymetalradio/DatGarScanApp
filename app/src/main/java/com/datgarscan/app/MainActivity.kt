@@ -27,10 +27,6 @@ import com.datgarscan.app.login.LoginActivity
 import com.datgarscan.app.webapi.MangaResumen
 import com.datgarscan.app.webapi.SesionManager
 import com.datgarscan.app.webapi.WebApiClient
-import com.datgarscan.app.radio.RadioPlayerService
-import android.content.BroadcastReceiver
-import android.content.IntentFilter
-import android.os.Build
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -43,13 +39,6 @@ class MainActivity : BaseActivity() {
     }
 
     private lateinit var binding: ActivityMainBinding
-
-    private val radioStateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: android.content.Context?, intent: Intent?) {
-            actualizarFabRadio(intent?.getBooleanExtra(RadioPlayerService.EXTRA_PLAYING, false) == true)
-        }
-    }
-
 
     private var countDownEvento: CountDownTimer? = null
     private val urlBoletosEvento = "https://funticket.mx/evento/bby-mtal-cdmx/"
@@ -65,7 +54,6 @@ class MainActivity : BaseActivity() {
     ) {
         actualizarEstadoSesion()
         iniciarBannerEvento()
-        configurarFabRadio()
         cargarContinuarLeyendo()
         com.datgarscan.app.notificaciones.NotificacionesManager.registrarSiHaySesion(this)
         sincronizarGarritas()
@@ -87,6 +75,7 @@ class MainActivity : BaseActivity() {
         setContentView(binding.root)
 
         try { UnityAdsManager.inicializar(this) } catch (_: Throwable) {}
+        try { com.datgarscan.app.ads.AnunciosManager.inicializar(this) } catch (_: Throwable) {}
 
         binding.overlaySync.visibility = View.VISIBLE
         binding.ivPawLoading.startAnimation(AnimationUtils.loadAnimation(this, R.anim.pulse_garrita))
@@ -776,8 +765,6 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
-        try { unregisterReceiver(radioStateReceiver) } catch (_: Exception) {}
-
         countDownEvento?.cancel()
         super.onDestroy()
     }
@@ -907,47 +894,6 @@ class MainActivity : BaseActivity() {
         } catch (e: Exception) {
             Toast.makeText(this, "No se pudo abrir el enlace de boletos.", Toast.LENGTH_SHORT).show()
         }
-    }
-
-
-    private fun configurarFabRadio() {
-        try {
-            val filter = IntentFilter(RadioPlayerService.ACTION_STATE)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                registerReceiver(radioStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-            } else {
-                registerReceiver(radioStateReceiver, filter)
-            }
-        } catch (_: Exception) { }
-
-        actualizarFabRadio(RadioPlayerService.isPlaying)
-
-        binding.fabRadio.setOnClickListener {
-            RadioPlayerService.toggle(this)
-            // estado optimista; el broadcast confirma
-            actualizarFabRadio(!RadioPlayerService.isPlaying)
-        }
-        binding.fabRadio.setOnLongClickListener {
-            try {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://datgarscanlation.xyz/bmradio1/")))
-            } catch (e: Exception) {
-                Toast.makeText(this, "No se pudo abrir BMRadio1.", Toast.LENGTH_SHORT).show()
-            }
-            true
-        }
-    }
-
-    private fun actualizarFabRadio(playing: Boolean) {
-        try {
-            if (playing) {
-                binding.fabRadio.contentDescription = "Pausar BMRadio1"
-                // Icono de "pause" del sistema
-                binding.fabRadio.setImageResource(android.R.drawable.ic_media_pause)
-            } else {
-                binding.fabRadio.contentDescription = "Escuchar BMRadio1"
-                binding.fabRadio.setImageResource(android.R.drawable.ic_lock_silent_mode_off)
-            }
-        } catch (_: Exception) { }
     }
 
 

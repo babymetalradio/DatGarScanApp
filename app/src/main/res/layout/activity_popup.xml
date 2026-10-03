@@ -27,7 +27,7 @@
         app:layout_constraintBottom_toTopOf="@id/btnAccion"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" 
-        android:minHeight="50dp" />
+            android:minHeight="50dp" />
 
     <WebView
         android:id="@+id/webContenido"

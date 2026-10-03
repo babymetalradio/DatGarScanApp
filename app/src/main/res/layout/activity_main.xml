@@ -286,25 +286,7 @@
                 android:background="@drawable/bg_boton_gradiente" />
 
         </LinearLayout>
-
-
-        <!-- FAB radio BMRadio1 -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fabRadio"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="12dp"
-            android:contentDescription="BMRadio1"
-            android:src="@android:drawable/ic_lock_silent_mode_off"
-            app:backgroundTint="@color/accent2"
-            app:tint="@color/white"
-            app:fabSize="normal"
-            app:elevation="8dp"
-            app:layout_constraintBottom_toTopOf="@id/bottomNav"
-            app:layout_constraintEnd_toEndOf="parent" />
-
-        <!-- BOTTOM NAVIGATION -->
+<!-- BOTTOM NAVIGATION -->
         <LinearLayout
             android:id="@+id/bottomNav"
             android:layout_width="0dp"
