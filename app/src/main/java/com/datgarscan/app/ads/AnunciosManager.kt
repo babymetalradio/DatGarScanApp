@@ -13,7 +13,7 @@ import com.startapp.sdk.adsbase.adlisteners.AdEventListener
 
 /**
  * Intersticiales: InMobi → fallback StartApp
- * Banners: InMobi (FrameLayout)
+ * Banners: Unity Ads
  * Rewarded: Unity (Tienda)
  */
 object AnunciosManager {
@@ -121,7 +121,8 @@ object AnunciosManager {
         try {
             val activity = context as? Activity ?: return
             val vg = container as? ViewGroup ?: return
-            InMobiAdsManager.cargarBanner(activity, vg)
+            // Banner: Unity (más rápido cuando ya está inicializado)
+            UnityAdsManager.cargarBanner(activity, vg)
         } catch (e: Exception) {
             Log.e(TAG, "banner", e)
         }
