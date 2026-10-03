@@ -33,19 +33,26 @@ object InMobiAdsManager {
     fun inicializar(context: Context) {
         if (inicializado) return
         try {
-            val consent = JSONObject().apply {
-                put(InMobiSdk.IM_GDPR_CONSENT_AVAILABLE, true)
-            }
-            InMobiSdk.init(context.applicationContext, ACCOUNT_ID, consent,
-                SdkInitializationListener { error ->
-                    if (error == null) {
-                        inicializado = true
-                        Log.d(TAG, "InMobi init OK")
-                        precargarInterstitial(context.applicationContext)
-                    } else {
-                        Log.e(TAG, "InMobi init falló: ${error.message}")
+            val consent = JSONObject()
+            try {
+                consent.put(InMobiSdk.IM_GDPR_CONSENT_AVAILABLE, true)
+            } catch (_: Exception) { }
+
+            InMobiSdk.init(
+                context.applicationContext,
+                ACCOUNT_ID,
+                consent,
+                object : SdkInitializationListener {
+                    override fun onInitializationComplete(error: Error?) {
+                        if (error == null) {
+                            inicializado = true
+                            Log.d(TAG, "InMobi init OK")
+                        } else {
+                            Log.e(TAG, "InMobi init falló: ${error.message}")
+                        }
                     }
-                })
+                }
+            )
         } catch (e: Exception) {
             Log.e(TAG, "InMobi init exception", e)
         }
@@ -53,42 +60,46 @@ object InMobiAdsManager {
 
     fun estaListo(): Boolean = inicializado
 
-    fun precargarInterstitial(context: Context) {
-        if (!inicializado) return
-        try {
-            val appCtx = context.applicationContext
-            // InMobiInterstitial necesita Activity a veces; usamos app context y Activity al show
-            interstitialListo = false
-        } catch (e: Exception) {
-            Log.e(TAG, "precarga", e)
-        }
-    }
-
     fun precargarInterstitial(activity: Activity) {
         if (!inicializado) {
             inicializar(activity)
+            // reintento suave
+            activity.window?.decorView?.postDelayed({
+                if (inicializado) precargarInterstitialInternal(activity)
+            }, 1500)
             return
         }
+        precargarInterstitialInternal(activity)
+    }
+
+    private fun precargarInterstitialInternal(activity: Activity) {
         try {
             interstitialListo = false
-            val ad = InMobiInterstitial(activity, PLACEMENT_INTERSTITIAL, object : InterstitialAdEventListener() {
-                override fun onAdLoadSucceeded(ad: InMobiInterstitial, info: AdMetaInfo) {
-                    interstitialListo = true
-                    Log.d(TAG, "Interstitial listo")
+            val ad = InMobiInterstitial(
+                activity,
+                PLACEMENT_INTERSTITIAL,
+                object : InterstitialAdEventListener() {
+                    override fun onAdLoadSucceeded(ad: InMobiInterstitial, info: AdMetaInfo) {
+                        interstitialListo = true
+                        Log.d(TAG, "Interstitial listo")
+                    }
+
+                    override fun onAdLoadFailed(ad: InMobiInterstitial, status: InMobiAdRequestStatus) {
+                        interstitialListo = false
+                        Log.w(TAG, "Interstitial fail: ${status.statusCode}")
+                    }
+
+                    override fun onAdDismissed(ad: InMobiInterstitial) {
+                        interstitialListo = false
+                        precargarInterstitialInternal(activity)
+                    }
+
+                    override fun onAdDisplayFailed(ad: InMobiInterstitial) {
+                        interstitialListo = false
+                        precargarInterstitialInternal(activity)
+                    }
                 }
-                override fun onAdLoadFailed(ad: InMobiInterstitial, status: InMobiAdRequestStatus) {
-                    interstitialListo = false
-                    Log.w(TAG, "Interstitial fail: ${status.statusCode} ${status.message}")
-                }
-                override fun onAdDismissed(ad: InMobiInterstitial) {
-                    interstitialListo = false
-                    precargarInterstitial(activity)
-                }
-                override fun onAdDisplayFailed(ad: InMobiInterstitial) {
-                    interstitialListo = false
-                    precargarInterstitial(activity)
-                }
-            })
+            )
             interstitial = ad
             ad.load()
         } catch (e: Exception) {
@@ -128,7 +139,6 @@ object InMobiAdsManager {
             }
             if (!inicializado) {
                 inicializar(activity)
-                // reintentar cuando init complete es complejo; intentar igual
             }
             container.visibility = android.view.View.VISIBLE
             container.removeAllViews()
@@ -137,13 +147,16 @@ object InMobiAdsManager {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
-            banner.setBannerSize(320, 50)
+            try {
+                banner.setBannerSize(320, 50)
+            } catch (_: Exception) { }
             banner.setListener(object : BannerAdEventListener() {
                 override fun onAdLoadSucceeded(ad: InMobiBanner, info: AdMetaInfo) {
                     Log.d(TAG, "Banner cargado")
                 }
+
                 override fun onAdLoadFailed(ad: InMobiBanner, status: InMobiAdRequestStatus) {
-                    Log.w(TAG, "Banner fail: ${status.statusCode} ${status.message}")
+                    Log.w(TAG, "Banner fail: ${status.statusCode}")
                 }
             })
             container.addView(banner)
