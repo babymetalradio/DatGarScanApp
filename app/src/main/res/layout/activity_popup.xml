@@ -19,14 +19,15 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <com.startapp.sdk.ads.banner.Banner
+    <FrameLayout
         android:id="@+id/bannerPopup"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
         app:layout_constraintBottom_toTopOf="@id/btnAccion"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent" 
+            android:minHeight="50dp" />
 
     <WebView
         android:id="@+id/webContenido"

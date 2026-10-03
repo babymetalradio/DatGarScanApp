@@ -15,17 +15,6 @@
         android:theme="@style/Theme.DatGarScan"
         android:supportsRtl="true"
         android:usesCleartextTraffic="false">
-        <!-- Start.io: banners e intersticiales -->
-        <meta-data
-            android:name="com.startapp.sdk.APPLICATION_ID"
-            android:value="207366634" />
-        <meta-data
-            android:name="com.startapp.sdk.SPLASH_ENABLED"
-            android:value="false" />
-        <meta-data
-            android:name="com.startapp.sdk.RETURN_ADS_ENABLED"
-            android:value="false" />
-
 
 
 <activity

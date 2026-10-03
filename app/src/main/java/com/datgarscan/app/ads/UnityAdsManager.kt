@@ -14,10 +14,11 @@ import com.unity3d.ads.UnityAdsShowOptions
 import com.unity3d.services.banners.BannerErrorInfo
 import com.unity3d.services.banners.BannerView
 import com.unity3d.services.banners.UnityBannerSize
+import java.lang.ref.WeakReference
 
 /**
- * Única red de anuncios: Unity Ads (sustituye StartApp).
- * Game ID Android: 6197188
+ * Unity Ads: rewarded, interstitial y banners.
+ * Game ID: 6197188
  */
 object UnityAdsManager {
 
@@ -28,11 +29,16 @@ object UnityAdsManager {
     const val PLACEMENT_BANNER = "Banner_Android"
 
     @Volatile private var inicializado = false
+    @Volatile private var iniciando = false
     @Volatile private var rewardedListo = false
     @Volatile private var interstitialListo = false
 
+    // Banners pendientes hasta que Unity termine de inicializar
+    private val bannersPendientes = mutableListOf<Pair<WeakReference<Activity>, WeakReference<ViewGroup>>>()
+
     fun inicializar(context: Context) {
-        if (inicializado) return
+        if (inicializado || iniciando) return
+        iniciando = true
         try {
             val testMode = BuildConfig.DEBUG
             UnityAds.initialize(
@@ -40,9 +46,21 @@ object UnityAdsManager {
                 object : IUnityAdsInitializationListener {
                     override fun onInitializationComplete() {
                         inicializado = true
+                        iniciando = false
                         Log.d(TAG, "Unity Ads listo (test=$testMode)")
                         precargarRewarded()
                         precargarInterstitial()
+                        // Cargar banners que se pidieron antes de que Unity estuviera listo
+                        val pendientes = synchronized(bannersPendientes) {
+                            bannersPendientes.toList().also { bannersPendientes.clear() }
+                        }
+                        for ((actRef, contRef) in pendientes) {
+                            val act = actRef.get()
+                            val cont = contRef.get()
+                            if (act != null && cont != null && !act.isFinishing) {
+                                act.runOnUiThread { cargarBannerAhora(act, cont, reintento = true) }
+                            }
+                        }
                     }
 
                     override fun onInitializationFailed(
@@ -50,11 +68,13 @@ object UnityAdsManager {
                         message: String?
                     ) {
                         inicializado = false
+                        iniciando = false
                         Log.w(TAG, "Init falló: $error $message")
                     }
                 }
             )
         } catch (e: Exception) {
+            iniciando = false
             Log.e(TAG, "Init exception", e)
         }
     }
@@ -182,19 +202,31 @@ object UnityAdsManager {
         }
     }
 
-    // ---- Banner ----
+    // ---- Banner (carga tras init + reintento) ----
 
     fun cargarBanner(activity: Activity, container: ViewGroup?) {
         if (container == null) return
+        if (com.datgarscan.app.tienda.SinAnunciosManager.tieneSinAnuncios(activity)) {
+            container.visibility = android.view.View.GONE
+            return
+        }
+        container.visibility = android.view.View.VISIBLE
+
+        if (!inicializado) {
+            // Encolar y arrancar Unity; se cargará en onInitializationComplete
+            synchronized(bannersPendientes) {
+                bannersPendientes.add(WeakReference(activity) to WeakReference(container))
+            }
+            inicializar(activity)
+            Log.d(TAG, "Banner en cola (Unity aún iniciando)")
+            return
+        }
+        cargarBannerAhora(activity, container, reintento = true)
+    }
+
+    private fun cargarBannerAhora(activity: Activity, container: ViewGroup, reintento: Boolean) {
         try {
-            if (com.datgarscan.app.tienda.SinAnunciosManager.tieneSinAnuncios(activity)) {
-                container.visibility = android.view.View.GONE
-                return
-            }
-            if (!inicializado) {
-                inicializar(activity)
-            }
-            container.visibility = android.view.View.VISIBLE
+            if (activity.isFinishing) return
             container.removeAllViews()
             val banner = BannerView(activity, PLACEMENT_BANNER, UnityBannerSize(320, 50))
             banner.layoutParams = FrameLayout.LayoutParams(
@@ -209,6 +241,14 @@ object UnityAdsManager {
                 override fun onBannerClick(bannerAdView: BannerView?) {}
                 override fun onBannerFailedToLoad(bannerAdView: BannerView?, errorInfo: BannerErrorInfo?) {
                     Log.w(TAG, "Banner fail: ${errorInfo?.errorMessage}")
+                    // Un reintento a los 2s (red lenta / fill tardío)
+                    if (reintento && !activity.isFinishing) {
+                        container.postDelayed({
+                            if (!activity.isFinishing) {
+                                cargarBannerAhora(activity, container, reintento = false)
+                            }
+                        }, 2000)
+                    }
                 }
                 override fun onBannerLeftApplication(bannerView: BannerView?) {}
             }
