@@ -252,17 +252,73 @@ object UnityAdsManager {
         cargarBannerAhora(activity, container, intento = 0)
     }
 
-    // Unity a veces no tiene anuncio de banner ("no fill"). Reintentamos con
-    // esperas crecientes y, mientras no hay anuncio, el espacio se colapsa.
+    // Unity a veces no tiene anuncio de banner ("no fill"). Mientras tanto se muestra
+    // un banner propio (misma medida 320x50) que lleva a la Tienda, y se sigue
+    // intentando con Unity. Si Unity carga, reemplaza al propio sin mover nada.
     private const val MAX_INTENTOS_BANNER = 4
-    private const val TAG_ESTABLE = "banner_estable"
+    private const val MAX_INTENTOS_BANNER_LECTOR = 2
     private val ESPERA_BANNER_MS = longArrayOf(0L, 20_000L, 45_000L, 90_000L)
+    private const val TAG_ESTABLE = "banner_estable"
+    private const val TAG_PROPIO = "banner_propio"
+
+    private fun dp(activity: Activity, v: Int): Int =
+        (v * activity.resources.displayMetrics.density).toInt()
+
+    private fun quitarBannersUnity(container: ViewGroup) {
+        for (i in container.childCount - 1 downTo 0) {
+            val v = container.getChildAt(i)
+            if (v is BannerView) {
+                container.removeView(v)
+                try { v.destroy() } catch (_: Throwable) { }
+            }
+        }
+    }
+
+    private fun quitarPropio(container: ViewGroup) {
+        for (i in container.childCount - 1 downTo 0) {
+            if (container.getChildAt(i).tag == TAG_PROPIO) container.removeViewAt(i)
+        }
+    }
+
+    private fun mostrarPropio(activity: Activity, container: ViewGroup) {
+        // En la Tienda o en el popup no tiene sentido promocionar la Tienda.
+        if (activity is com.datgarscan.app.tienda.TiendaActivity ||
+            activity is com.datgarscan.app.popup.PopupActivity
+        ) return
+        for (i in 0 until container.childCount) {
+            if (container.getChildAt(i).tag == TAG_PROPIO) return
+        }
+        val propio = android.widget.ImageView(activity).apply {
+            tag = TAG_PROPIO
+            setImageResource(com.datgarscan.app.R.drawable.banner_propio)
+            scaleType = android.widget.ImageView.ScaleType.FIT_XY
+            contentDescription = "Quitar los anuncios en la Tienda"
+            layoutParams = FrameLayout.LayoutParams(
+                dp(activity, 320), dp(activity, 50), android.view.Gravity.CENTER_HORIZONTAL
+            )
+            outlineProvider = object : android.view.ViewOutlineProvider() {
+                override fun getOutline(view: android.view.View, outline: android.graphics.Outline) {
+                    outline.setRoundRect(0, 0, view.width, view.height, dp(activity, 8).toFloat())
+                }
+            }
+            clipToOutline = true
+            setOnClickListener {
+                try {
+                    activity.startActivity(
+                        com.datgarscan.app.tienda.TiendaActivity.crearIntent(activity)
+                    )
+                } catch (_: Throwable) { }
+            }
+        }
+        container.addView(propio, 0)
+        container.visibility = android.view.View.VISIBLE
+    }
 
     private fun cargarBannerAhora(activity: Activity, container: ViewGroup, intento: Int) {
         try {
             if (activity.isFinishing) return
             val estable = container.tag == TAG_ESTABLE
-            container.removeAllViews()
+            quitarBannersUnity(container)
             container.visibility = android.view.View.VISIBLE
             val banner = BannerView(activity, PLACEMENT_BANNER, UnityBannerSize(320, 50))
             banner.layoutParams = FrameLayout.LayoutParams(
@@ -272,6 +328,7 @@ object UnityAdsManager {
             banner.listener = object : BannerView.IListener {
                 override fun onBannerLoaded(bannerAdView: BannerView?) {
                     Log.d(TAG, "Banner cargado")
+                    quitarPropio(container)
                     container.visibility = android.view.View.VISIBLE
                 }
 
@@ -283,30 +340,26 @@ object UnityAdsManager {
                     errorInfo: BannerErrorInfo?
                 ) {
                     Log.w(TAG, "Banner fail (intento $intento): ${errorInfo?.errorMessage}")
-                    try { banner.destroy() } catch (_: Throwable) { }
-                    container.removeAllViews()
+                    quitarBannersUnity(container)
+                    if (activity.isFinishing) return
 
-                    if (estable) {
-                        // Lector: el espacio queda reservado (la lectura no se mueve).
-                        // Solo un reintento rapido, como antes.
-                        if (intento == 0 && !activity.isFinishing) {
-                            container.postDelayed({
-                                if (!activity.isFinishing) cargarBannerAhora(activity, container, 1)
-                            }, 800)
-                        }
-                        return
+                    mostrarPropio(activity, container)
+                    if (container.childCount == 0) {
+                        container.visibility = android.view.View.GONE
                     }
 
-                    container.visibility = android.view.View.GONE
+                    // Lector: pocos reintentos (rapidos). Resto de pantallas: espera creciente.
+                    val maximo = if (estable) MAX_INTENTOS_BANNER_LECTOR else MAX_INTENTOS_BANNER
                     val siguiente = intento + 1
-                    if (siguiente < MAX_INTENTOS_BANNER && !activity.isFinishing) {
+                    if (siguiente < maximo) {
+                        val espera = if (estable) 800L else ESPERA_BANNER_MS[siguiente]
                         container.postDelayed({
                             if (!activity.isFinishing &&
                                 !com.datgarscan.app.tienda.SinAnunciosManager.tieneSinAnuncios(activity)
                             ) {
                                 cargarBannerAhora(activity, container, siguiente)
                             }
-                        }, ESPERA_BANNER_MS[siguiente])
+                        }, espera)
                     }
                 }
 
