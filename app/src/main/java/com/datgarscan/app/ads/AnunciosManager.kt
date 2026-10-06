@@ -62,11 +62,11 @@ object AnunciosManager {
         } catch (_: Throwable) { }
     }
 
-    fun cargarBanner(context: Context, container: View?) {
+    fun cargarBanner(context: Context, container: View?, estable: Boolean = false) {
         try {
             val activity = context as? Activity ?: return
             val vg = container as? ViewGroup ?: return
-            UnityAdsManager.cargarBanner(activity, vg)
+            UnityAdsManager.cargarBanner(activity, vg, estable)
         } catch (e: Exception) {
             Log.e(TAG, "banner", e)
         }

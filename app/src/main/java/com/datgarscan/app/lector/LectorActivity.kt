@@ -76,7 +76,7 @@ class LectorActivity : BaseActivity() {
         // Anuncio de pantalla completa cada cierto numero de capitulos abiertos
         com.datgarscan.app.ads.AnunciosManager.registrarCapituloAbierto(this)
         com.datgarscan.app.ads.AnunciosManager.ocultarBannersSiCorresponde(this, binding.bannerLector)
-        com.datgarscan.app.ads.AnunciosManager.cargarBanner(this, binding.bannerLector)
+        com.datgarscan.app.ads.AnunciosManager.cargarBanner(this, binding.bannerLector, estable = true)
 
         cargarPreferencias()
 
