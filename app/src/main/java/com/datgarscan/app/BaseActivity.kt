@@ -21,7 +21,11 @@ abstract class BaseActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        // En builds de depuracion (APK de pruebas) NO se bloquean las capturas,
+        // para poder tomar screenshots al probar. En release siempre se bloquean.
+        if (!BuildConfig.DEBUG) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
     }
 
     /** Quita el bloqueo temporalmente (ej. mientras se muestra un dialogo que si se puede capturar). */
@@ -31,6 +35,7 @@ abstract class BaseActivity : AppCompatActivity() {
 
     /** Vuelve a activar el bloqueo despues de permitirCapturasTemporalmente(). */
     protected fun restaurarProteccion() {
+        if (BuildConfig.DEBUG) return
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
     }
 }
