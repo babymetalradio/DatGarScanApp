@@ -28,6 +28,11 @@ object UnityAdsManager {
     const val PLACEMENT_INTERSTITIAL = "Interstitial_Android"
     const val PLACEMENT_BANNER = "Banner_Android"
 
+    // true = el APK debug usa anuncios REALES (para probar el fill de verdad).
+    // No afecta al release (siempre es real). Con true NO des clic a los anuncios.
+    // Pon false para volver a anuncios de prueba en debug.
+    private const val REALES_EN_DEBUG = true
+
     private var reintentosInit = 0
 
     @Volatile private var inicializado = false
@@ -42,7 +47,7 @@ object UnityAdsManager {
         if (inicializado || iniciando) return
         iniciando = true
         try {
-            val testMode = BuildConfig.DEBUG
+            val testMode = BuildConfig.DEBUG && !REALES_EN_DEBUG
             UnityAds.initialize(
                 context.applicationContext,
                 GAME_ID,
