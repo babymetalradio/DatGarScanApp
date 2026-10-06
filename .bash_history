@@ -1,0 +1,4 @@
+cd $(find \~/storage /sdcard -type d -name "DatGarScanApp" 2>/dev/null | head -1) && git checkout main && git pull origin main && unzip -o /sdcard/proyectos/main-unity-1.9.9.2.zip -d . && grep -E "applicationId|versionCode|versionName|unity|startapp" app/build.gradle && git add build.gradle app/build.gradle app/src/main/AndroidManifest.xml   app/src/main/java/com/datgarscan/app/MainActivity.kt   app/src/main/java/com/datgarscan/app/ads/   app/src/main/res/layout/ && git status && git commit -m "1.9.9.2: Unity Ads (banner, interstitial, rewarded) versionCode 10" && git push origin main && git tag -d v1.9.9.2 2>/dev/null; git push origin :refs/tags/v1.9.9.2 2>/dev/null; git tag -a v1.9.9.2 -m "Dat-Gar Scan 1.9.9.2
+
+- Unity Ads: banner, interstitial y rewarded
+- versionCode 10" && git push origin v1.9.9.2
