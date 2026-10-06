@@ -2,7 +2,10 @@ package com.datgarscan.app.ads
 
 import android.app.Activity
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import com.datgarscan.app.BuildConfig
@@ -28,6 +31,11 @@ object UnityAdsManager {
     const val PLACEMENT_INTERSTITIAL = "Interstitial_Android"
     const val PLACEMENT_BANNER = "Banner_Android"
 
+    // TEMPORAL: modo diagnostico. Con true: usa anuncios REALES (aunque sea debug)
+    // y muestra avisos en pantalla. Pon false cuando termines de probar.
+    private const val DIAGNOSTICO = true
+    private var reintentosInit = 0
+
     @Volatile private var inicializado = false
     @Volatile private var iniciando = false
     @Volatile private var rewardedListo = false
@@ -36,11 +44,18 @@ object UnityAdsManager {
     private val bannersPendientes =
         mutableListOf<Pair<WeakReference<Activity>, WeakReference<ViewGroup>>>()
 
+    private fun avisar(context: Context, texto: String) {
+        if (!DIAGNOSTICO) return
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(context.applicationContext, texto, Toast.LENGTH_LONG).show()
+        }
+    }
+
     fun inicializar(context: Context) {
         if (inicializado || iniciando) return
         iniciando = true
         try {
-            val testMode = BuildConfig.DEBUG
+            val testMode = if (DIAGNOSTICO) false else BuildConfig.DEBUG
             UnityAds.initialize(
                 context.applicationContext,
                 GAME_ID,
@@ -50,6 +65,8 @@ object UnityAdsManager {
                         inicializado = true
                         iniciando = false
                         Log.d(TAG, "Unity Ads listo (test=$testMode)")
+                        reintentosInit = 0
+                        avisar(context, "Unity listo (test=$testMode)")
                         precargarRewarded()
                         precargarInterstitial()
                         val pendientes = synchronized(bannersPendientes) {
@@ -73,6 +90,14 @@ object UnityAdsManager {
                         inicializado = false
                         iniciando = false
                         Log.w(TAG, "Init falló: $error $message")
+                        avisar(context, "Unity init falló: $error $message")
+                        // Reintenta (los banners en cola siguen esperando)
+                        if (reintentosInit < 3) {
+                            reintentosInit++
+                            Handler(Looper.getMainLooper()).postDelayed(
+                                { inicializar(context) }, 5000L * reintentosInit
+                            )
+                        }
                     }
                 }
             )
@@ -244,6 +269,7 @@ object UnityAdsManager {
             banner.listener = object : BannerView.IListener {
                 override fun onBannerLoaded(bannerAdView: BannerView?) {
                     Log.d(TAG, "Banner cargado")
+                    avisar(activity, "Banner cargado")
                 }
 
                 override fun onBannerShown(bannerAdView: BannerView?) {}
@@ -254,6 +280,7 @@ object UnityAdsManager {
                     errorInfo: BannerErrorInfo?
                 ) {
                     Log.w(TAG, "Banner fail: ${errorInfo?.errorMessage}")
+                    avisar(activity, "Banner falló: ${errorInfo?.errorCode} ${errorInfo?.errorMessage}")
                     if (reintento && !activity.isFinishing) {
                         container.postDelayed({
                             if (!activity.isFinishing) {
