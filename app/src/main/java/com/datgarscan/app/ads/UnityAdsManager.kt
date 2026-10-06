@@ -2,9 +2,12 @@ package com.datgarscan.app.ads
 
 import android.app.Activity
 import android.content.Context
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.widget.TextView
 import android.widget.Toast
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -31,10 +34,14 @@ object UnityAdsManager {
     const val PLACEMENT_INTERSTITIAL = "Interstitial_Android"
     const val PLACEMENT_BANNER = "Banner_Android"
 
-    // TEMPORAL: modo diagnostico. Con true: usa anuncios REALES (aunque sea debug)
-    // y muestra avisos en pantalla. Pon false cuando termines de probar.
+    // TEMPORAL: modo diagnostico. Con true: usa anuncios REALES (aunque sea debug),
+    // junta un registro y muestra un cuadro con todo (con boton Copiar).
+    // Pon false cuando termines de probar.
     private const val DIAGNOSTICO = true
     private var reintentosInit = 0
+    private val registro = StringBuilder()
+    private var dialogoProgramado = false
+    private var dialogoMostrado = false
 
     @Volatile private var inicializado = false
     @Volatile private var iniciando = false
@@ -44,11 +51,45 @@ object UnityAdsManager {
     private val bannersPendientes =
         mutableListOf<Pair<WeakReference<Activity>, WeakReference<ViewGroup>>>()
 
+    private fun anotar(texto: String) {
+        if (!DIAGNOSTICO) return
+        synchronized(registro) { registro.append("• ").append(texto).append("\n\n") }
+    }
+
     private fun avisar(context: Context, texto: String) {
         if (!DIAGNOSTICO) return
+        anotar(texto)
         Handler(Looper.getMainLooper()).post {
-            Toast.makeText(context.applicationContext, texto, Toast.LENGTH_LONG).show()
+            Toast.makeText(context.applicationContext, texto.take(60), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun programarDialogo(activity: Activity) {
+        if (!DIAGNOSTICO || dialogoProgramado || dialogoMostrado) return
+        dialogoProgramado = true
+        Handler(Looper.getMainLooper()).postDelayed({ mostrarDialogo(activity) }, 6000)
+    }
+
+    private fun mostrarDialogo(activity: Activity) {
+        if (dialogoMostrado) return
+        if (activity.isFinishing || activity.isDestroyed) {
+            dialogoProgramado = false // se reprograma en el siguiente fallo
+            return
+        }
+        dialogoMostrado = true
+        val texto = synchronized(registro) { registro.toString() }
+        val dlg = android.app.AlertDialog.Builder(activity)
+            .setTitle("Diagnóstico Unity")
+            .setMessage(texto)
+            .setPositiveButton("Copiar") { _, _ ->
+                val cm = activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                cm.setPrimaryClip(ClipData.newPlainText("diagnostico-unity", texto))
+                Toast.makeText(activity, "Copiado", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cerrar", null)
+            .create()
+        dlg.show()
+        dlg.findViewById<TextView>(android.R.id.message)?.setTextIsSelectable(true)
     }
 
     fun inicializar(context: Context) {
@@ -66,7 +107,7 @@ object UnityAdsManager {
                         iniciando = false
                         Log.d(TAG, "Unity Ads listo (test=$testMode)")
                         reintentosInit = 0
-                        avisar(context, "Unity listo (test=$testMode)")
+                        avisar(context, "Unity listo. SDK ${UnityAds.getVersion()} (test=$testMode)")
                         precargarRewarded()
                         precargarInterstitial()
                         val pendientes = synchronized(bannersPendientes) {
@@ -90,8 +131,7 @@ object UnityAdsManager {
                         inicializado = false
                         iniciando = false
                         Log.w(TAG, "Init falló: $error $message")
-                        avisar(context, "Unity init falló: $error $message")
-                        // Reintenta (los banners en cola siguen esperando)
+                        avisar(context, "Unity init falló: $error | $message")
                         if (reintentosInit < 3) {
                             reintentosInit++
                             Handler(Looper.getMainLooper()).postDelayed(
@@ -118,6 +158,7 @@ object UnityAdsManager {
             UnityAds.load(PLACEMENT_REWARDED, object : IUnityAdsLoadListener {
                 override fun onUnityAdsAdLoaded(placementId: String) {
                     rewardedListo = true
+                    anotar("Rewarded: cargado OK")
                 }
 
                 override fun onUnityAdsFailedToLoad(
@@ -127,6 +168,7 @@ object UnityAdsManager {
                 ) {
                     rewardedListo = false
                     Log.w(TAG, "Rewarded load: $error $message")
+                    anotar("Rewarded falló: $error | $message")
                 }
             })
         } catch (e: Exception) {
@@ -183,6 +225,7 @@ object UnityAdsManager {
             UnityAds.load(PLACEMENT_INTERSTITIAL, object : IUnityAdsLoadListener {
                 override fun onUnityAdsAdLoaded(placementId: String) {
                     interstitialListo = true
+                    anotar("Interstitial: cargado OK")
                 }
 
                 override fun onUnityAdsFailedToLoad(
@@ -192,6 +235,7 @@ object UnityAdsManager {
                 ) {
                     interstitialListo = false
                     Log.w(TAG, "Interstitial load: $error $message")
+                    anotar("Interstitial falló: $error | $message")
                 }
             })
         } catch (e: Exception) {
@@ -269,7 +313,7 @@ object UnityAdsManager {
             banner.listener = object : BannerView.IListener {
                 override fun onBannerLoaded(bannerAdView: BannerView?) {
                     Log.d(TAG, "Banner cargado")
-                    avisar(activity, "Banner cargado")
+                    anotar("Banner: cargado OK")
                 }
 
                 override fun onBannerShown(bannerAdView: BannerView?) {}
@@ -280,7 +324,8 @@ object UnityAdsManager {
                     errorInfo: BannerErrorInfo?
                 ) {
                     Log.w(TAG, "Banner fail: ${errorInfo?.errorMessage}")
-                    avisar(activity, "Banner falló: ${errorInfo?.errorCode} ${errorInfo?.errorMessage}")
+                    anotar("Banner falló: código=${errorInfo?.errorCode} | mensaje=${errorInfo?.errorMessage}")
+                    programarDialogo(activity)
                     if (reintento && !activity.isFinishing) {
                         container.postDelayed({
                             if (!activity.isFinishing) {
