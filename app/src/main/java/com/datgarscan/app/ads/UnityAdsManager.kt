@@ -33,8 +33,8 @@ object UnityAdsManager {
     @Volatile private var rewardedListo = false
     @Volatile private var interstitialListo = false
 
-    // Banners pendientes hasta que Unity termine de inicializar
-    private val bannersPendientes = mutableListOf<Pair<WeakReference<Activity>, WeakReference<ViewGroup>>>()
+    private val bannersPendientes =
+        mutableListOf<Pair<WeakReference<Activity>, WeakReference<ViewGroup>>>()
 
     fun inicializar(context: Context) {
         if (inicializado || iniciando) return
@@ -42,7 +42,9 @@ object UnityAdsManager {
         try {
             val testMode = BuildConfig.DEBUG
             UnityAds.initialize(
-                context.applicationContext, GAME_ID, testMode,
+                context.applicationContext,
+                GAME_ID,
+                testMode,
                 object : IUnityAdsInitializationListener {
                     override fun onInitializationComplete() {
                         inicializado = true
@@ -50,7 +52,6 @@ object UnityAdsManager {
                         Log.d(TAG, "Unity Ads listo (test=$testMode)")
                         precargarRewarded()
                         precargarInterstitial()
-                        // Cargar banners que se pidieron antes de que Unity estuviera listo
                         val pendientes = synchronized(bannersPendientes) {
                             bannersPendientes.toList().also { bannersPendientes.clear() }
                         }
@@ -58,7 +59,9 @@ object UnityAdsManager {
                             val act = actRef.get()
                             val cont = contRef.get()
                             if (act != null && cont != null && !act.isFinishing) {
-                                act.runOnUiThread { cargarBannerAhora(act, cont, reintento = true) }
+                                act.runOnUiThread {
+                                    cargarBannerAhora(act, cont, reintento = true)
+                                }
                             }
                         }
                     }
@@ -83,8 +86,6 @@ object UnityAdsManager {
     fun rewardedListo(): Boolean = inicializado && rewardedListo
     fun interstitialListo(): Boolean = inicializado && interstitialListo
 
-    // ---- Rewarded ----
-
     fun precargarRewarded() {
         if (!inicializado) return
         try {
@@ -93,6 +94,7 @@ object UnityAdsManager {
                 override fun onUnityAdsAdLoaded(placementId: String) {
                     rewardedListo = true
                 }
+
                 override fun onUnityAdsFailedToLoad(
                     placementId: String,
                     error: UnityAds.UnityAdsLoadError?,
@@ -114,7 +116,10 @@ object UnityAdsManager {
             return
         }
         try {
-            UnityAds.show(activity, PLACEMENT_REWARDED, UnityAdsShowOptions(),
+            UnityAds.show(
+                activity,
+                PLACEMENT_REWARDED,
+                UnityAdsShowOptions(),
                 object : IUnityAdsShowListener {
                     override fun onUnityAdsShowFailure(
                         placementId: String,
@@ -125,6 +130,7 @@ object UnityAdsManager {
                         onFallido()
                         precargarRewarded()
                     }
+
                     override fun onUnityAdsShowStart(placementId: String) {}
                     override fun onUnityAdsShowClick(placementId: String) {}
                     override fun onUnityAdsShowComplete(
@@ -137,14 +143,13 @@ object UnityAdsManager {
                         }
                         precargarRewarded()
                     }
-                })
+                }
+            )
         } catch (e: Exception) {
             onFallido()
             precargarRewarded()
         }
     }
-
-    // ---- Interstitial ----
 
     fun precargarInterstitial() {
         if (!inicializado) return
@@ -154,6 +159,7 @@ object UnityAdsManager {
                 override fun onUnityAdsAdLoaded(placementId: String) {
                     interstitialListo = true
                 }
+
                 override fun onUnityAdsFailedToLoad(
                     placementId: String,
                     error: UnityAds.UnityAdsLoadError?,
@@ -176,7 +182,10 @@ object UnityAdsManager {
             return
         }
         try {
-            UnityAds.show(activity, PLACEMENT_INTERSTITIAL, UnityAdsShowOptions(),
+            UnityAds.show(
+                activity,
+                PLACEMENT_INTERSTITIAL,
+                UnityAdsShowOptions(),
                 object : IUnityAdsShowListener {
                     override fun onUnityAdsShowFailure(
                         placementId: String,
@@ -186,6 +195,7 @@ object UnityAdsManager {
                         interstitialListo = false
                         precargarInterstitial()
                     }
+
                     override fun onUnityAdsShowStart(placementId: String) {}
                     override fun onUnityAdsShowClick(placementId: String) {}
                     override fun onUnityAdsShowComplete(
@@ -195,14 +205,13 @@ object UnityAdsManager {
                         interstitialListo = false
                         precargarInterstitial()
                     }
-                })
+                }
+            )
         } catch (e: Exception) {
             interstitialListo = false
             precargarInterstitial()
         }
     }
-
-    // ---- Banner (carga tras init + reintento) ----
 
     fun cargarBanner(activity: Activity, container: ViewGroup?) {
         if (container == null) return
@@ -213,7 +222,6 @@ object UnityAdsManager {
         container.visibility = android.view.View.VISIBLE
 
         if (!inicializado) {
-            // Encolar y arrancar Unity; se cargará en onInitializationComplete
             synchronized(bannersPendientes) {
                 bannersPendientes.add(WeakReference(activity) to WeakReference(container))
             }
@@ -237,9 +245,14 @@ object UnityAdsManager {
                 override fun onBannerLoaded(bannerAdView: BannerView?) {
                     Log.d(TAG, "Banner cargado")
                 }
+
                 override fun onBannerShown(bannerAdView: BannerView?) {}
                 override fun onBannerClick(bannerAdView: BannerView?) {}
-                override fun onBannerFailedToLoad(bannerAdView: BannerView?, errorInfo: BannerErrorInfo?) {
+
+                override fun onBannerFailedToLoad(
+                    bannerAdView: BannerView?,
+                    errorInfo: BannerErrorInfo?
+                ) {
                     Log.w(TAG, "Banner fail: ${errorInfo?.errorMessage}")
                     if (reintento && !activity.isFinishing) {
                         container.postDelayed({
@@ -248,16 +261,8 @@ object UnityAdsManager {
                             }
                         }, 800)
                     }
-                }")
-                    // Un reintento a los 2s (red lenta / fill tardío)
-                    if (reintento && !activity.isFinishing) {
-                        container.postDelayed({
-                            if (!activity.isFinishing) {
-                                cargarBannerAhora(activity, container, reintento = false)
-                            }
-                        }, 1000)
-                    }
                 }
+
                 override fun onBannerLeftApplication(bannerView: BannerView?) {}
             }
             container.addView(banner)
