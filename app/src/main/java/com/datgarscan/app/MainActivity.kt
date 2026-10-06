@@ -70,12 +70,13 @@ class MainActivity : BaseActivity() {
         // resuelve la conexion y se trae el catalogo.
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        // Unity ya inicia en DatGarApp; refuerzo por si acaso
+        try { UnityAdsManager.inicializar(this) } catch (_: Throwable) {}
+        try { com.datgarscan.app.ads.AnunciosManager.inicializar(this) } catch (_: Throwable) {}
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        try { UnityAdsManager.inicializar(this) } catch (_: Throwable) {}
-        try { com.datgarscan.app.ads.AnunciosManager.inicializar(this) } catch (_: Throwable) {}
 
         binding.overlaySync.visibility = View.VISIBLE
         binding.ivPawLoading.startAnimation(AnimationUtils.loadAnimation(this, R.anim.pulse_garrita))

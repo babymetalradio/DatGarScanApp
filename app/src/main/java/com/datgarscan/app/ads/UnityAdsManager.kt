@@ -241,13 +241,21 @@ object UnityAdsManager {
                 override fun onBannerClick(bannerAdView: BannerView?) {}
                 override fun onBannerFailedToLoad(bannerAdView: BannerView?, errorInfo: BannerErrorInfo?) {
                     Log.w(TAG, "Banner fail: ${errorInfo?.errorMessage}")
+                    if (reintento && !activity.isFinishing) {
+                        container.postDelayed({
+                            if (!activity.isFinishing) {
+                                cargarBannerAhora(activity, container, reintento = false)
+                            }
+                        }, 800)
+                    }
+                }")
                     // Un reintento a los 2s (red lenta / fill tardío)
                     if (reintento && !activity.isFinishing) {
                         container.postDelayed({
                             if (!activity.isFinishing) {
                                 cargarBannerAhora(activity, container, reintento = false)
                             }
-                        }, 2000)
+                        }, 1000)
                     }
                 }
                 override fun onBannerLeftApplication(bannerView: BannerView?) {}
