@@ -7,24 +7,21 @@ import android.view.View
 import android.view.ViewGroup
 
 /**
- * Banners e intersticiales: Unity Ads.
- * Rewarded (garritas): Unity (TiendaActivity).
+ * Rama test-unity: SOLO Unity Ads (banner, interstitial).
+ * Rewarded también Unity (Tienda).
  */
 object AnunciosManager {
 
-    private const val TAG = "Ads"
+    private const val TAG = "AdsUnity"
     private const val PREFS = "datgar_ads"
     private const val KEY_CONTADOR = "capitulos_abiertos"
     private const val KEY_CONTADOR_SALIDA = "salidas_lector"
-    private const val CADA_CUANTOS_CAPITULOS = 1
-    private const val CADA_CUANTAS_SALIDAS = 2
+    private const val CADA_CUANTOS_CAPITULOS = 4
+    private const val CADA_CUANTAS_SALIDAS = 6
 
     fun inicializar(context: Context) {
         try {
             UnityAdsManager.inicializar(context)
-            if (context is Activity) {
-                // precarga intersticial cuando Unity termine (lo hace el propio manager)
-            }
         } catch (e: Exception) {
             Log.e(TAG, "init", e)
         }
