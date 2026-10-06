@@ -107,7 +107,7 @@ object UnityAdsManager {
                         iniciando = false
                         Log.d(TAG, "Unity Ads listo (test=$testMode)")
                         reintentosInit = 0
-                        avisar(context, "Unity listo. SDK ${UnityAds.getVersion()} (test=$testMode)")
+                        avisar(context, "Unity listo. SDK 4.20.0 (test=$testMode)")
                         precargarRewarded()
                         precargarInterstitial()
                         val pendientes = synchronized(bannersPendientes) {
