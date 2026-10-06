@@ -1,3 +1,12 @@
+## Dat-Gar Scan v1.9.9.4
+
+### Anuncios
+
+- Cuando no hay un banner disponible, ahora se muestra un aviso para quitar los anuncios desde la Tienda, en lugar de dejar un espacio vacío.
+- Los banners se reintentan automáticamente en segundo plano.
+- En el lector, el espacio del banner ya no se mueve mientras lees.
+- Mejora en la carga de anuncios cuando falla el inicio.
+
 ## Dat-Gar Scan v1.9.9
 
 
