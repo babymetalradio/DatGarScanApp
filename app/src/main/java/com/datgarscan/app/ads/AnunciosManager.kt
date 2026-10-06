@@ -16,8 +16,8 @@ object AnunciosManager {
     private const val PREFS = "datgar_ads"
     private const val KEY_CONTADOR = "capitulos_abiertos"
     private const val KEY_CONTADOR_SALIDA = "salidas_lector"
-    private const val CADA_CUANTOS_CAPITULOS = 1
-    private const val CADA_CUANTAS_SALIDAS = 2
+    private const val CADA_CUANTOS_CAPITULOS = 4
+    private const val CADA_CUANTAS_SALIDAS = 6
 
     fun inicializar(context: Context) {
         try {
