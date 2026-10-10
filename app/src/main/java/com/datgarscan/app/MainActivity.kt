@@ -1,6 +1,5 @@
 package com.datgarscan.app
 
-import com.datgarscan.app.ads.UnityAdsManager
 
 import android.content.Context
 import android.content.Intent
@@ -74,7 +73,6 @@ class MainActivity : BaseActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        try { UnityAdsManager.inicializar(this) } catch (_: Throwable) {}
         try { com.datgarscan.app.ads.AnunciosManager.inicializar(this) } catch (_: Throwable) {}
 
         binding.overlaySync.visibility = View.VISIBLE
