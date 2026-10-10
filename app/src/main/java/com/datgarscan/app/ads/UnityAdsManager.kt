@@ -47,7 +47,7 @@ object UnityAdsManager {
         if (inicializado || iniciando) return
         iniciando = true
         try {
-            val testMode = BuildConfig.DEBUG && !REALES_EN_DEBUG
+            val testMode = false // anuncios REALES (release de prueba InMobi+Unity)
             UnityAds.initialize(
                 context.applicationContext,
                 GAME_ID,

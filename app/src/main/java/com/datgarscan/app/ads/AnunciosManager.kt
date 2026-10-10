@@ -7,12 +7,13 @@ import android.view.View
 import android.view.ViewGroup
 
 /**
- * Rama test-unity: SOLO Unity Ads (banner, interstitial).
- * Rewarded también Unity (Tienda).
+ * Prueba InMobi en main (unos días):
+ * - Banner / interstitial: InMobi → si falla, Unity
+ * - Rewarded (garritas): Unity
  */
 object AnunciosManager {
 
-    private const val TAG = "AdsUnity"
+    private const val TAG = "Ads"
     private const val PREFS = "datgar_ads"
     private const val KEY_CONTADOR = "capitulos_abiertos"
     private const val KEY_CONTADOR_SALIDA = "salidas_lector"
@@ -22,6 +23,10 @@ object AnunciosManager {
     fun inicializar(context: Context) {
         try {
             UnityAdsManager.inicializar(context)
+            InMobiAdsManager.inicializar(context)
+            if (context is Activity) {
+                InMobiAdsManager.precargarInterstitial(context)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "init", e)
         }
@@ -34,7 +39,7 @@ object AnunciosManager {
             val contador = prefs.getInt(KEY_CONTADOR, 0) + 1
             if (contador >= CADA_CUANTOS_CAPITULOS) {
                 prefs.edit().putInt(KEY_CONTADOR, 0).apply()
-                UnityAdsManager.mostrarInterstitial(context)
+                mostrarIntersticial(context)
             } else {
                 prefs.edit().putInt(KEY_CONTADOR, contador).apply()
             }
@@ -48,11 +53,27 @@ object AnunciosManager {
             val contador = prefs.getInt(KEY_CONTADOR_SALIDA, 0) + 1
             if (contador >= CADA_CUANTAS_SALIDAS) {
                 prefs.edit().putInt(KEY_CONTADOR_SALIDA, 0).apply()
-                UnityAdsManager.mostrarInterstitial(context)
+                mostrarIntersticial(context)
             } else {
                 prefs.edit().putInt(KEY_CONTADOR_SALIDA, contador).apply()
             }
         } catch (_: Throwable) { }
+    }
+
+    private fun mostrarIntersticial(context: Context) {
+        try {
+            val activity = context as? Activity
+            if (activity != null && InMobiAdsManager.mostrarInterstitial(activity)) {
+                return
+            }
+            // Fallback Unity
+            UnityAdsManager.mostrarInterstitial(context)
+        } catch (e: Exception) {
+            Log.e(TAG, "interstitial", e)
+            try {
+                UnityAdsManager.mostrarInterstitial(context)
+            } catch (_: Exception) { }
+        }
     }
 
     fun ocultarBannersSiCorresponde(context: Context, vararg banners: View?) {
@@ -66,9 +87,17 @@ object AnunciosManager {
         try {
             val activity = context as? Activity ?: return
             val vg = container as? ViewGroup ?: return
-            UnityAdsManager.cargarBanner(activity, vg, estable)
+            // Prioridad InMobi (prueba); si falla, el manager llama a Unity
+            InMobiAdsManager.cargarBanner(activity, vg)
         } catch (e: Exception) {
-            Log.e(TAG, "banner", e)
+            Log.e(TAG, "banner InMobi", e)
+            try {
+                val activity = context as? Activity ?: return
+                val vg = container as? ViewGroup ?: return
+                UnityAdsManager.cargarBanner(activity, vg, estable)
+            } catch (e2: Exception) {
+                Log.e(TAG, "banner Unity", e2)
+            }
         }
     }
 }
