@@ -2,7 +2,7 @@ name: Compilar APK
 
 on:
   push:
-    branches: [ main, beta ]
+    branches: [ main, beta, test-inmobi ]
   workflow_dispatch:
 
 jobs:
