@@ -59,6 +59,9 @@ class MainActivity : BaseActivity() {
         sincronizarGarritas()
     }
 
+    private var offlineMostrado = false
+    private var callbackRed: android.net.ConnectivityManager.NetworkCallback? = null
+
     private val permisoNotificacionesLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
     ) { /* si lo niega, simplemente no le llegan notificaciones - no pasa nada */ }
@@ -99,6 +102,9 @@ class MainActivity : BaseActivity() {
 
         binding.tvActualizar.setOnClickListener { recargarTodo() }
         binding.tvReintentar.setOnClickListener { recargarTodo() }
+        binding.tvIrDescargas.setOnClickListener {
+            startActivity(com.datgarscan.app.descargas.DescargasActivity.crearIntent(this))
+        }
         binding.tvSesion.setOnClickListener {
             if (SesionManager.estaLogueado()) {
                 mostrarMenuUsuario()
@@ -158,6 +164,13 @@ class MainActivity : BaseActivity() {
                 procesarExtrasNotificacion(intent)
             }
         }
+
+        // Sin internet al abrir: no tiene caso esperar la conexion, se ofrece
+        // ir directo a las descargas. Cuando vuelva la red, se recarga solo.
+        if (!com.datgarscan.app.webapi.Conectividad.hayInternet(this)) {
+            mostrarOffline()
+        }
+        registrarAvisoDeRed()
     }
 
     override fun onBackPressed() {
@@ -171,6 +184,9 @@ class MainActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (offlineMostrado && com.datgarscan.app.webapi.Conectividad.hayInternet(this)) {
+            recargarTodo()
+        }
         if (com.datgarscan.app.webapi.ChallengeResolver.resuelto) {
             cargarContinuarLeyendo()
             // Al volver de la tienda, aplica de inmediato el "sin anuncios"
@@ -262,6 +278,7 @@ class MainActivity : BaseActivity() {
      * banners desaparezcan sin tener que cerrar la app por completo.
      */
     private fun recargarTodo() {
+        offlineMostrado = false
         cargarCatalogo()
         cargarContinuarLeyendo()
         lifecycleScope.launch {
@@ -465,6 +482,10 @@ class MainActivity : BaseActivity() {
     }
 
     private fun cargarCatalogo() {
+        if (!com.datgarscan.app.webapi.Conectividad.hayInternet(this)) {
+            mostrarOffline()
+            return
+        }
         val yaHayDatos = catalogoCompleto.isNotEmpty()
         if (!yaHayDatos) {
             binding.overlaySync.visibility = View.VISIBLE
@@ -502,6 +523,8 @@ class MainActivity : BaseActivity() {
                 if (e is com.google.gson.stream.MalformedJsonException) {
                     val crudo = obtenerRespuestaCruda("api/mangas.php")
                     mostrarError("El servidor no devolvió JSON válido. Respuesta real:\n\n${crudo.take(500)}")
+                } else if (com.datgarscan.app.webapi.ErroresRed.esErrorDeConexion(e)) {
+                    mostrarOffline()
                 } else {
                     mostrarError(com.datgarscan.app.webapi.ErroresRed.mensajeAmable(e))
                 }
@@ -690,15 +713,56 @@ class MainActivity : BaseActivity() {
             mostrarError(if (catalogoCompleto.isEmpty()) "No hay mangas publicados todavía." else "Sin resultados con ese filtro.")
             return
         }
+        offlineMostrado = false
         binding.contenedorError.visibility = View.GONE
         binding.tvVersion.text = "v${BuildConfig.VERSION_NAME} · ${mangas.size} series"
         adapter.actualizar(mangas)
     }
 
     private fun mostrarError(mensaje: String) {
+        offlineMostrado = false
+        binding.tvIrDescargas.visibility = View.GONE
         binding.tvError.text = mensaje
         binding.contenedorError.visibility = View.VISIBLE
         adapter.actualizar(emptyList())
+    }
+
+    /** Panel de "sin conexion": explica y ofrece ir a las descargas (si hay). */
+    private fun mostrarOffline() {
+        offlineMostrado = true
+        binding.overlaySync.visibility = View.GONE
+        binding.ivPawLoading.clearAnimation()
+
+        val cuantas = try {
+            com.datgarscan.app.descargas.DescargasManager.listarDescargas(this).size
+        } catch (e: Throwable) { 0 }
+
+        if (cuantas > 0) {
+            binding.tvError.text = "Sin conexión a internet.\nPuedes leer los $cuantas capítulos que descargaste."
+            binding.tvIrDescargas.text = "Ir a mis descargas ($cuantas)"
+            binding.tvIrDescargas.visibility = View.VISIBLE
+        } else {
+            binding.tvError.text = "Sin conexión a internet.\nAún no tienes capítulos descargados. Descárgalos con conexión desde la página de cada serie para leer sin internet."
+            binding.tvIrDescargas.visibility = View.GONE
+        }
+        binding.contenedorError.visibility = View.VISIBLE
+        adapter.actualizar(emptyList())
+    }
+
+    /** Avisa cuando vuelve la conexion para recargar solo, sin que el usuario toque nada. */
+    private fun registrarAvisoDeRed() {
+        try {
+            val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+            val cb = object : android.net.ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: android.net.Network) {
+                    runOnUiThread {
+                        if (offlineMostrado && !isFinishing) recargarTodo()
+                    }
+                }
+            }
+            cm.registerDefaultNetworkCallback(cb)
+            callbackRed = cb
+        } catch (e: Throwable) { /* sin aviso automatico; queda el boton Reintentar */ }
     }
     private fun mostrarDialogoReporte(mangaPrellenado: String = "") {
         val contenedor = android.widget.LinearLayout(this).apply {
@@ -767,6 +831,12 @@ class MainActivity : BaseActivity() {
 
     override fun onDestroy() {
         countDownEvento?.cancel()
+        try {
+            callbackRed?.let {
+                (getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager)
+                    .unregisterNetworkCallback(it)
+            }
+        } catch (e: Throwable) { }
         super.onDestroy()
     }
 

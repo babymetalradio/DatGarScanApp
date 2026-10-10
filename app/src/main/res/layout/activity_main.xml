@@ -274,6 +274,19 @@
                 android:textColor="@color/muted" />
 
             <TextView
+                android:id="@+id/tvIrDescargas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="10dp"
+                android:text="Ir a mis descargas"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:visibility="gone"
+                android:background="@drawable/bg_boton_gradiente" />
+
+            <TextView
                 android:id="@+id/tvReintentar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
