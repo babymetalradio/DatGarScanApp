@@ -15,7 +15,7 @@ import com.datgarscan.app.webapi.CodigoRequest
 import com.datgarscan.app.webapi.GarritasEstado
 import com.datgarscan.app.webapi.SesionManager
 import com.datgarscan.app.webapi.WebApiClient
-import com.datgarscan.app.ads.UnityAdsManager
+import com.datgarscan.app.ads.InMobiAdsManager
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -124,11 +124,11 @@ class TiendaActivity : BaseActivity() {
     private var momentoMostrado = 0L
 
     private fun prepararAnuncioRecompensado() {
-        anuncioListo = UnityAdsManager.rewardedListo()
+        anuncioListo = InMobiAdsManager.rewardedListo()
         if (!anuncioListo) {
-            UnityAdsManager.precargarRewarded()
+            InMobiAdsManager.precargarRewarded(this)
             binding.root.postDelayed({
-                anuncioListo = UnityAdsManager.rewardedListo()
+                anuncioListo = InMobiAdsManager.rewardedListo()
                 actualizarBotonAnuncio()
             }, 2000)
         }
@@ -140,12 +140,12 @@ class TiendaActivity : BaseActivity() {
             Toast.makeText(this, "Ya viste todos los anuncios de hoy.", Toast.LENGTH_SHORT).show()
             return
         }
-        if (!UnityAdsManager.rewardedListo()) {
+        if (!InMobiAdsManager.rewardedListo()) {
             Toast.makeText(this, "Preparando el anuncio, espera unos segundos...", Toast.LENGTH_SHORT).show()
             prepararAnuncioRecompensado()
             return
         }
-        UnityAdsManager.mostrarRewarded(
+        InMobiAdsManager.mostrarRewarded(
             this,
             onCompletado = { otorgarGarritasPorAnuncio() },
             onFallido = {

@@ -16,7 +16,7 @@ import com.inmobi.sdk.SdkInitializationListener
 import org.json.JSONObject
 
 /**
- * InMobi: banners e intersticiales.
+ * Rama test-inmobi: SOLO InMobi (banner, interstitial, rewarded).
  * Account: e8325a72173441c488213372e95da99c
  */
 object InMobiAdsManager {
@@ -25,10 +25,18 @@ object InMobiAdsManager {
     const val ACCOUNT_ID = "e8325a72173441c488213372e95da99c"
     const val PLACEMENT_BANNER = 10000829296L
     const val PLACEMENT_INTERSTITIAL = 10000829295L
+    const val PLACEMENT_REWARDED = 10000835637L
 
     @Volatile private var inicializado = false
+
     private var interstitial: InMobiInterstitial? = null
     @Volatile private var interstitialListo = false
+
+    private var rewarded: InMobiInterstitial? = null
+    @Volatile private var rewardedListo = false
+    private var onRewardedCompletado: (() -> Unit)? = null
+    private var onRewardedFallido: (() -> Unit)? = null
+    private var recompensaOtorgada = false
 
     fun inicializar(context: Context) {
         if (inicializado) return
@@ -46,7 +54,7 @@ object InMobiAdsManager {
                     override fun onInitializationComplete(error: Error?) {
                         if (error == null) {
                             inicializado = true
-                            Log.d(TAG, "InMobi init OK")
+                            Log.d(TAG, "InMobi init OK (solo InMobi)")
                         } else {
                             Log.e(TAG, "InMobi init falló: ${error.message}")
                         }
@@ -54,56 +62,51 @@ object InMobiAdsManager {
                 }
             )
         } catch (e: Exception) {
-            Log.e(TAG, "InMobi init exception", e)
+            Log.e(TAG, "init exception", e)
         }
     }
 
     fun estaListo(): Boolean = inicializado
 
+    // ---- Interstitial ----
+
     fun precargarInterstitial(activity: Activity) {
         if (!inicializado) {
             inicializar(activity)
-            // reintento suave
             activity.window?.decorView?.postDelayed({
-                if (inicializado) precargarInterstitialInternal(activity)
-            }, 1500)
+                if (inicializado) cargarInterstitial(activity)
+            }, 2000)
             return
         }
-        precargarInterstitialInternal(activity)
+        cargarInterstitial(activity)
     }
 
-    private fun precargarInterstitialInternal(activity: Activity) {
+    private fun cargarInterstitial(activity: Activity) {
         try {
             interstitialListo = false
-            val ad = InMobiInterstitial(
-                activity,
-                PLACEMENT_INTERSTITIAL,
-                object : InterstitialAdEventListener() {
-                    override fun onAdLoadSucceeded(ad: InMobiInterstitial, info: AdMetaInfo) {
-                        interstitialListo = true
-                        Log.d(TAG, "Interstitial listo")
-                    }
-
-                    override fun onAdLoadFailed(ad: InMobiInterstitial, status: InMobiAdRequestStatus) {
-                        interstitialListo = false
-                        Log.w(TAG, "Interstitial fail: ${status.statusCode}")
-                    }
-
-                    override fun onAdDismissed(ad: InMobiInterstitial) {
-                        interstitialListo = false
-                        precargarInterstitialInternal(activity)
-                    }
-
-                    override fun onAdDisplayFailed(ad: InMobiInterstitial) {
-                        interstitialListo = false
-                        precargarInterstitialInternal(activity)
-                    }
+            val listener = object : InterstitialAdEventListener() {
+                override fun onAdLoadSucceeded(ad: InMobiInterstitial, info: AdMetaInfo) {
+                    interstitialListo = true
+                    Log.d(TAG, "Interstitial listo")
                 }
-            )
+                override fun onAdLoadFailed(ad: InMobiInterstitial, status: InMobiAdRequestStatus) {
+                    interstitialListo = false
+                    Log.w(TAG, "Interstitial fail: ${status.message}")
+                }
+                override fun onAdDismissed(ad: InMobiInterstitial) {
+                    interstitialListo = false
+                    cargarInterstitial(activity)
+                }
+                override fun onAdDisplayFailed(ad: InMobiInterstitial) {
+                    interstitialListo = false
+                    cargarInterstitial(activity)
+                }
+            }
+            val ad = InMobiInterstitial(activity, PLACEMENT_INTERSTITIAL, listener)
             interstitial = ad
             ad.load()
         } catch (e: Exception) {
-            Log.e(TAG, "precargar interstitial", e)
+            Log.e(TAG, "cargar interstitial", e)
         }
     }
 
@@ -120,7 +123,6 @@ object InMobiAdsManager {
                 ad.show()
                 true
             } else {
-                Log.w(TAG, "Interstitial no listo")
                 precargarInterstitial(activity)
                 false
             }
@@ -130,6 +132,93 @@ object InMobiAdsManager {
         }
     }
 
+    // ---- Rewarded (placement rewarded InMobi) ----
+
+    fun rewardedListo(): Boolean = inicializado && rewardedListo
+
+    fun precargarRewarded(activity: Activity) {
+        if (!inicializado) {
+            inicializar(activity)
+            activity.window?.decorView?.postDelayed({
+                if (inicializado) cargarRewarded(activity)
+            }, 2000)
+            return
+        }
+        cargarRewarded(activity)
+    }
+
+    private fun cargarRewarded(activity: Activity) {
+        try {
+            rewardedListo = false
+            val listener = object : InterstitialAdEventListener() {
+                override fun onAdLoadSucceeded(ad: InMobiInterstitial, info: AdMetaInfo) {
+                    rewardedListo = true
+                    Log.d(TAG, "Rewarded listo")
+                }
+                override fun onAdLoadFailed(ad: InMobiInterstitial, status: InMobiAdRequestStatus) {
+                    rewardedListo = false
+                    Log.w(TAG, "Rewarded fail: ${status.message}")
+                }
+                override fun onAdDismissed(ad: InMobiInterstitial) {
+                    rewardedListo = false
+                    val ok = recompensaOtorgada
+                    recompensaOtorgada = false
+                    if (ok) onRewardedCompletado?.invoke() else onRewardedFallido?.invoke()
+                    onRewardedCompletado = null
+                    onRewardedFallido = null
+                    cargarRewarded(activity)
+                }
+                override fun onAdDisplayFailed(ad: InMobiInterstitial) {
+                    rewardedListo = false
+                    onRewardedFallido?.invoke()
+                    onRewardedCompletado = null
+                    onRewardedFallido = null
+                    cargarRewarded(activity)
+                }
+                override fun onRewardsUnlocked(ad: InMobiInterstitial, rewards: Map<Any, Any>?) {
+                    recompensaOtorgada = true
+                    Log.d(TAG, "Rewarded unlocked: $rewards")
+                }
+            }
+            val ad = InMobiInterstitial(activity, PLACEMENT_REWARDED, listener)
+            rewarded = ad
+            ad.load()
+        } catch (e: Exception) {
+            Log.e(TAG, "cargar rewarded", e)
+            rewardedListo = false
+        }
+    }
+
+    fun mostrarRewarded(
+        activity: Activity,
+        onCompletado: () -> Unit,
+        onFallido: () -> Unit
+    ) {
+        if (com.datgarscan.app.tienda.SinAnunciosManager.tieneSinAnuncios(activity)) {
+            // sin anuncios: dar recompensa sin video
+            onCompletado()
+            return
+        }
+        if (!rewardedListo()) {
+            onFallido()
+            precargarRewarded(activity)
+            return
+        }
+        try {
+            recompensaOtorgada = false
+            onRewardedCompletado = onCompletado
+            onRewardedFallido = onFallido
+            rewardedListo = false
+            rewarded?.show()
+        } catch (e: Exception) {
+            Log.e(TAG, "mostrar rewarded", e)
+            onFallido()
+            precargarRewarded(activity)
+        }
+    }
+
+    // ---- Banner ----
+
     fun cargarBanner(activity: Activity, container: ViewGroup?) {
         if (container == null) return
         try {
@@ -137,9 +226,7 @@ object InMobiAdsManager {
                 container.visibility = android.view.View.GONE
                 return
             }
-            if (!inicializado) {
-                inicializar(activity)
-            }
+            if (!inicializado) inicializar(activity)
             container.visibility = android.view.View.VISIBLE
             container.removeAllViews()
             val banner = InMobiBanner(activity, PLACEMENT_BANNER)
@@ -147,16 +234,13 @@ object InMobiAdsManager {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
-            try {
-                banner.setBannerSize(320, 50)
-            } catch (_: Exception) { }
+            try { banner.setBannerSize(320, 50) } catch (_: Exception) { }
             banner.setListener(object : BannerAdEventListener() {
                 override fun onAdLoadSucceeded(ad: InMobiBanner, info: AdMetaInfo) {
                     Log.d(TAG, "Banner cargado")
                 }
-
                 override fun onAdLoadFailed(ad: InMobiBanner, status: InMobiAdRequestStatus) {
-                    Log.w(TAG, "Banner fail: ${status.statusCode}")
+                    Log.w(TAG, "Banner fail: ${status.message}")
                 }
             })
             container.addView(banner)
