@@ -374,41 +374,21 @@ class MainActivity : BaseActivity() {
 
                 if (!respuesta.obligatorio && yaAvisada == disponible) return@launch
 
-                val dialogo = AlertDialog.Builder(this@MainActivity)
-                    .setTitle("Nueva versión disponible")
-                    .setMessage(
-                        "Hay una versión nueva de la app ($disponible).\n\n" +
-                        (respuesta.notas?.takeIf { it.isNotBlank() } ?: "")
-                    )
-                    .setCancelable(!respuesta.obligatorio)
-                    .setPositiveButton("Actualizar") { _, _ ->
-                        try {
-                            startActivity(
-                                android.content.Intent(
-                                    android.content.Intent.ACTION_VIEW,
-                                    android.net.Uri.parse(respuesta.apk_url)
-                                )
-                            )
-                        } catch (e: Exception) {
-                            Toast.makeText(this@MainActivity, "No se pudo abrir el enlace de descarga.", Toast.LENGTH_SHORT).show()
-                        }
-                        if (respuesta.obligatorio) finish()
-                    }
-
-                if (!respuesta.obligatorio) {
-                    dialogo.setNegativeButton("Más tarde") { _, _ ->
-                        prefs.edit().putString("version_avisada", disponible).apply()
-                    }
-                }
-
-                // Este aviso es la unica pantalla de la app donde permitimos
-                // capturas (por si alguien quiere guardar las notas de la
-                // version, por ejemplo). Se restaura el bloqueo apenas se
-                // cierra el dialogo, sin importar como se haya cerrado.
+                // Diálogo in-app: notas + % de descarga + instalar APK
                 permitirCapturasTemporalmente()
-                val dialogoConstruido = dialogo.create()
-                dialogoConstruido.setOnDismissListener { restaurarProteccion() }
-                dialogoConstruido.show()
+                com.datgarscan.app.update.ActualizacionHelper.mostrar(
+                    activity = this@MainActivity,
+                    versionName = disponible,
+                    notas = respuesta.notas,
+                    apkUrl = respuesta.apk_url,
+                    obligatorio = respuesta.obligatorio,
+                    onMasTarde = {
+                        prefs.edit().putString("version_avisada", disponible).apply()
+                        restaurarProteccion()
+                    }
+                )
+                // Si el usuario cierra el sistema de instalación, restauramos protección en onResume
+                try { restaurarProteccion() } catch (_: Throwable) {}
 
             } catch (e: Exception) {
                 // Si falla, simplemente no se muestra nada - no es critico
