@@ -25,6 +25,8 @@ App de lectura de manga de **Dat-Gar Scanlation**.
 
 | versionName | versionCode | Notas |
 |-------------|-------------|--------|
+| **1.9.9.6** | **14** | **Actualización in-app** (notas + % descarga + instalar) |
+| 1.9.9.5 | 13 | InMobi+Unity anuncios reales (prueba) |
 | 1.9.9.4 | 12 | Offline → ir a descargas; Unity |
 | 1.9.9.3 | 11 | Unity banner/interstitial/rewarded (4/6) |
 | 1.9.9.2 | 10 | Unity Ads |
@@ -33,6 +35,21 @@ App de lectura de manga de **Dat-Gar Scanlation**.
 Releases: tags `v1.9.9.x` en GitHub → workflow **release** genera APK firmado.
 
 ---
+
+
+
+## Actualización in-app (desde 1.9.9.6)
+
+Al abrir la app, si `api/version.php` reporta una versión mayor:
+
+1. Diálogo **Hay una nueva actualización** + notas del servidor  
+2. Botón **Actualizar** → descarga el APK **dentro** de la app con **%**  
+3. Al 100% → instalador del sistema Android  
+
+Código: `app/.../update/ActualizacionHelper.kt`  
+Requiere `REQUEST_INSTALL_PACKAGES` + FileProvider (`file_paths.xml`).
+
+En el admin/API hay que publicar `version_name`, `apk_url`, `notas`, `obligatorio`.
 
 ## Anuncios
 
