@@ -25,7 +25,8 @@ App de lectura de manga de **Dat-Gar Scanlation**.
 
 | versionName | versionCode | Notas |
 |-------------|-------------|--------|
-| **1.9.9.6** | **14** | **Actualización in-app** (notas + % descarga + instalar) |
+| **1.9.9.7** | **15** | Bloqueo lector si hay bloqueador DNS/ads (opción 2); Pro/offline libres |
+| 1.9.9.6 | 14 | Actualización in-app (notas + % descarga + instalar) |
 | 1.9.9.5 | 13 | InMobi+Unity anuncios reales (prueba) |
 | 1.9.9.4 | 12 | Offline → ir a descargas; Unity |
 | 1.9.9.3 | 11 | Unity banner/interstitial/rewarded (4/6) |
@@ -150,3 +151,8 @@ Al añadir redes de anuncios, packages o releases, **actualizar este README** co
 - versionName y versionCode  
 - IDs de ads (Game ID, Account, Placement)  
 - Qué red usa banner / interstitial / rewarded  
+
+
+## Bloqueador de anuncios (desde 1.9.9.7)
+
+Si se detecta DNS/VPN que bloquea anuncios, **el lector** muestra un aviso obligatorio hasta desactivar el bloqueador o usar Pro/sin anuncios. Catálogo y offline no se bloquean.

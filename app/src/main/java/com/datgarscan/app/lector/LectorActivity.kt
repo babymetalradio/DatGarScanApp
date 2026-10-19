@@ -73,6 +73,9 @@ class LectorActivity : BaseActivity() {
 
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+        // Opción 2: bloqueador DNS/ads — bloquea lector si hay bloqueo (salvo Pro/sin anuncios/offline)
+        comprobarBloqueadorAntesDeLeer()
+
         // Anuncio de pantalla completa cada cierto numero de capitulos abiertos
         com.datgarscan.app.ads.AnunciosManager.registrarCapituloAbierto(this)
         com.datgarscan.app.ads.AnunciosManager.ocultarBannersSiCorresponde(this, binding.bannerLector)
@@ -521,4 +524,100 @@ class LectorActivity : BaseActivity() {
     override fun onBackPressed() {
         salirDelLector()
     }
+
+    // --- Opción 2: bloqueador de anuncios ---
+    private var overlayBloqueo: android.view.View? = null
+
+    private fun comprobarBloqueadorAntesDeLeer() {
+        Thread {
+            val r = try {
+                com.datgarscan.app.ads.DetectorBloqueo.evaluar(this)
+            } catch (e: Exception) {
+                com.datgarscan.app.ads.DetectorBloqueo.Resultado(false, "error")
+            }
+            if (isFinishing) return@Thread
+            if (r.bloqueado) {
+                runOnUiThread {
+                    if (!isFinishing) mostrarOverlayBloqueo(r)
+                }
+            }
+        }.start()
+    }
+
+    private fun mostrarOverlayBloqueo(r: com.datgarscan.app.ads.DetectorBloqueo.Resultado) {
+        if (overlayBloqueo != null) return
+        val root = binding.root as? android.view.ViewGroup ?: return
+        val overlay = layoutInflater.inflate(R.layout.dialog_bloqueo_ads, root, false)
+        overlayBloqueo = overlay
+
+        val msg = overlay.findViewById<android.widget.TextView>(R.id.tvBloqueoMensaje)
+        val extra = when {
+            !r.hostnameDns.isNullOrBlank() -> "\n\nDNS: ${r.hostnameDns}"
+            r.vpn -> "\n\nSe detectó una VPN local (tipo AdGuard/Blokada)."
+            else -> ""
+        }
+        msg?.text = "Detectamos un bloqueador de anuncios. Para seguir leyendo, desactívalo o quita los anuncios desde la Tienda." + extra
+
+        overlay.findViewById<android.view.View>(R.id.btnBloqueoTienda)?.setOnClickListener {
+            try {
+                startActivity(com.datgarscan.app.tienda.TiendaActivity.crearIntent(this))
+            } catch (e: Exception) {
+                try {
+                    startActivity(android.content.Intent(this, com.datgarscan.app.tienda.TiendaActivity::class.java))
+                } catch (_: Exception) {
+                    android.widget.Toast.makeText(this, "Abre la Tienda desde el menú", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        overlay.findViewById<android.view.View>(R.id.btnBloqueoDns)?.setOnClickListener {
+            abrirAjustesDns()
+        }
+        overlay.findViewById<android.view.View>(R.id.btnBloqueoReintentar)?.setOnClickListener {
+            overlay.findViewById<android.view.View>(R.id.btnBloqueoReintentar)?.isEnabled = false
+            Thread {
+                val r2 = com.datgarscan.app.ads.DetectorBloqueo.evaluar(this)
+                runOnUiThread {
+                    if (isFinishing) return@runOnUiThread
+                    if (!r2.bloqueado) {
+                        quitarOverlayBloqueo()
+                        android.widget.Toast.makeText(this, "Listo, ya puedes leer", android.widget.Toast.LENGTH_SHORT).show()
+                    } else {
+                        overlay.findViewById<android.view.View>(R.id.btnBloqueoReintentar)?.isEnabled = true
+                        android.widget.Toast.makeText(this, "Aún se detecta el bloqueador", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }.start()
+        }
+
+        root.addView(
+            overlay,
+            android.view.ViewGroup.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
+    }
+
+    private fun quitarOverlayBloqueo() {
+        val o = overlayBloqueo ?: return
+        (o.parent as? android.view.ViewGroup)?.removeView(o)
+        overlayBloqueo = null
+    }
+
+    private fun abrirAjustesDns() {
+        val intents = listOf(
+            android.content.Intent("android.settings.PRIVATE_DNS_SETTINGS"),
+            android.content.Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS),
+            android.content.Intent(android.provider.Settings.ACTION_SETTINGS)
+        )
+        for (i in intents) {
+            try {
+                startActivity(i)
+                return
+            } catch (_: Exception) { }
+        }
+        android.widget.Toast.makeText(this, "Abre Ajustes → Red → DNS privado", android.widget.Toast.LENGTH_LONG).show()
+    }
+
+
 }
