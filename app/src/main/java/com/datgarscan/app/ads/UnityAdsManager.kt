@@ -236,12 +236,16 @@ object UnityAdsManager {
             banner.listener = object : BannerView.IListener {
                 override fun onBannerLoaded(bannerAdView: BannerView?) {
                     Log.d(TAG, "Banner cargado")
+                    BannerPropioHelper.quitar(container)
                 }
                 override fun onBannerShown(bannerAdView: BannerView?) {}
                 override fun onBannerClick(bannerAdView: BannerView?) {}
                 override fun onBannerFailedToLoad(bannerAdView: BannerView?, errorInfo: BannerErrorInfo?) {
                     Log.w(TAG, "Banner fail: ${errorInfo?.errorMessage}")
-                    // Un reintento a los 2s (red lenta / fill tardío)
+                    // Fallback: banner propio desde la web (panel admin)
+                    if (!activity.isFinishing) {
+                        BannerPropioHelper.mostrar(activity, container)
+                    }
                     if (reintento && !activity.isFinishing) {
                         container.postDelayed({
                             if (!activity.isFinishing) {
@@ -256,6 +260,7 @@ object UnityAdsManager {
             banner.load()
         } catch (e: Exception) {
             Log.e(TAG, "Banner exception", e)
+            try { BannerPropioHelper.mostrar(activity, container) } catch (_: Throwable) {}
         }
     }
 }
