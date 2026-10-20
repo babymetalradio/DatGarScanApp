@@ -212,6 +212,22 @@ object UnityAdsManager {
         }
         container.visibility = android.view.View.VISIBLE
 
+        // Panel web: "forzar" → solo banner propio (pruebas)
+        Thread {
+            val forzar = try { BannerPropioHelper.debeForzar() } catch (_: Throwable) { false }
+            activity.runOnUiThread {
+                if (activity.isFinishing) return@runOnUiThread
+                if (forzar) {
+                    container.removeAllViews()
+                    BannerPropioHelper.mostrar(activity, container)
+                    return@runOnUiThread
+                }
+                cargarBannerTrasForzar(activity, container)
+            }
+        }.start()
+    }
+
+    private fun cargarBannerTrasForzar(activity: Activity, container: ViewGroup) {
         if (!inicializado) {
             // Encolar y arrancar Unity; se cargará en onInitializationComplete
             synchronized(bannersPendientes) {

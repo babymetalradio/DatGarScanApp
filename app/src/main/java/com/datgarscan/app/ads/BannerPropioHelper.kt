@@ -13,8 +13,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Banner propio alojado en la web (panel admin → /api/banner_propio.php).
- * Se muestra cuando las redes no tienen fill.
+ * Banner propio desde la web (/api/banner_propio.php).
+ * Si "forzar" está activo en el panel, la app salta Unity y muestra solo este.
  */
 object BannerPropioHelper {
 
@@ -23,10 +23,17 @@ object BannerPropioHelper {
     private const val API_URL = "https://datgarscanlation.xyz/api/banner_propio.php"
 
     @Volatile private var cacheActivo = false
+    @Volatile private var cacheForzar = false
     @Volatile private var cacheImagen: String? = null
     @Volatile private var cacheLink: String? = null
     @Volatile private var cacheVersion = -1
     @Volatile private var ultimaCargaMs = 0L
+
+    /** true si el panel pide forzar solo banner propio. */
+    fun debeForzar(): Boolean {
+        refrescarCacheSiHaceFalta()
+        return cacheForzar && cacheActivo && !cacheImagen.isNullOrBlank()
+    }
 
     fun mostrar(activity: Activity, container: ViewGroup) {
         if (activity.isFinishing) return
@@ -38,7 +45,6 @@ object BannerPropioHelper {
             }
         } catch (_: Throwable) { }
 
-        // Ya hay uno
         for (i in 0 until container.childCount) {
             if (container.getChildAt(i).tag == TAG_VIEW) return
         }
@@ -46,7 +52,7 @@ object BannerPropioHelper {
         Thread {
             refrescarCacheSiHaceFalta()
             if (!cacheActivo || cacheImagen.isNullOrBlank()) {
-                Log.d(TAG, "Banner propio inactivo o sin imagen")
+                Log.d(TAG, "inactivo o sin imagen")
                 return@Thread
             }
             val urlImg = cacheImagen!!
@@ -57,16 +63,16 @@ object BannerPropioHelper {
                     if (container.getChildAt(i).tag == TAG_VIEW) return@runOnUiThread
                 }
                 val density = activity.resources.displayMetrics.density
-                val w = (320 * density).toInt()
-                val h = (50 * density).toInt()
                 val iv = ImageView(activity).apply {
                     tag = TAG_VIEW
                     scaleType = ImageView.ScaleType.FIT_XY
                     contentDescription = "Anuncio"
-                    layoutParams = FrameLayout.LayoutParams(w, h, android.view.Gravity.CENTER_HORIZONTAL)
-                    setOnClickListener {
-                        abrirDestino(activity, link)
-                    }
+                    layoutParams = FrameLayout.LayoutParams(
+                        (320 * density).toInt(),
+                        (50 * density).toInt(),
+                        android.view.Gravity.CENTER_HORIZONTAL
+                    )
+                    setOnClickListener { abrirDestino(activity, link) }
                 }
                 try {
                     Glide.with(activity).load(urlImg).into(iv)
@@ -82,15 +88,15 @@ object BannerPropioHelper {
 
     fun quitar(container: ViewGroup) {
         for (i in container.childCount - 1 downTo 0) {
-            if (container.getChildAt(i).tag == TAG_VIEW) {
-                container.removeViewAt(i)
-            }
+            if (container.getChildAt(i).tag == TAG_VIEW) container.removeViewAt(i)
         }
     }
 
     private fun refrescarCacheSiHaceFalta() {
         val ahora = System.currentTimeMillis()
-        if (ahora - ultimaCargaMs < 5 * 60 * 1000L && cacheVersion >= 0) return
+        // Con forzar, refrescar más seguido (1 min); normal 5 min
+        val ttl = if (cacheForzar) 60_000L else 5 * 60_000L
+        if (ahora - ultimaCargaMs < ttl && cacheVersion >= 0) return
         try {
             val conn = (URL(API_URL).openConnection() as HttpURLConnection).apply {
                 connectTimeout = 8000
@@ -98,20 +104,18 @@ object BannerPropioHelper {
                 requestMethod = "GET"
             }
             conn.inputStream.bufferedReader().use { reader ->
-                val body = reader.readText()
-                val json = JSONObject(body)
+                val json = JSONObject(reader.readText())
                 cacheActivo = json.optBoolean("activo", false)
-                cacheImagen = json.optString("imagen_url", null)
-                if (cacheImagen == "null" || cacheImagen.isNullOrBlank()) cacheImagen = null
-                cacheLink = json.optString("link_url", null)
-                if (cacheLink == "null" || cacheLink.isNullOrBlank()) cacheLink = null
+                cacheForzar = json.optBoolean("forzar", false)
+                cacheImagen = json.optString("imagen_url", null).takeIf { !it.isNullOrBlank() && it != "null" }
+                cacheLink = json.optString("link_url", null).takeIf { !it.isNullOrBlank() && it != "null" }
                 cacheVersion = json.optInt("version", 0)
                 ultimaCargaMs = ahora
-                Log.d(TAG, "cache v=$cacheVersion activo=$cacheActivo")
+                Log.d(TAG, "v=$cacheVersion activo=$cacheActivo forzar=$cacheForzar")
             }
             conn.disconnect()
         } catch (e: Exception) {
-            Log.w(TAG, "No se pudo cargar banner_propio: ${e.message}")
+            Log.w(TAG, "error API: ${e.message}")
         }
     }
 
@@ -120,15 +124,11 @@ object BannerPropioHelper {
             if (!link.isNullOrBlank()) {
                 activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
             } else {
-                activity.startActivity(
-                    com.datgarscan.app.tienda.TiendaActivity.crearIntent(activity)
-                )
+                activity.startActivity(com.datgarscan.app.tienda.TiendaActivity.crearIntent(activity))
             }
         } catch (_: Throwable) {
             try {
-                activity.startActivity(
-                    Intent(activity, com.datgarscan.app.tienda.TiendaActivity::class.java)
-                )
+                activity.startActivity(Intent(activity, com.datgarscan.app.tienda.TiendaActivity::class.java))
             } catch (_: Throwable) { }
         }
     }
