@@ -241,6 +241,22 @@ object UnityAdsManager {
         }
         container.visibility = android.view.View.VISIBLE
 
+        // Panel web: "forzar" → solo banner propio (editable en admin)
+        Thread {
+            val forzar = try { BannerPropioHelper.debeForzar() } catch (_: Throwable) { false }
+            activity.runOnUiThread {
+                if (activity.isFinishing) return@runOnUiThread
+                if (forzar) {
+                    quitarBannersUnity(container)
+                    BannerPropioHelper.mostrar(activity, container)
+                    return@runOnUiThread
+                }
+                cargarBannerTrasForzar(activity, container)
+            }
+        }.start()
+    }
+
+    private fun cargarBannerTrasForzar(activity: Activity, container: ViewGroup) {
         if (!inicializado) {
             synchronized(bannersPendientes) {
                 bannersPendientes.add(WeakReference(activity) to WeakReference(container))
@@ -281,37 +297,12 @@ object UnityAdsManager {
     }
 
     private fun mostrarPropio(activity: Activity, container: ViewGroup) {
-        // En la Tienda o en el popup no tiene sentido promocionar la Tienda.
-        if (activity is com.datgarscan.app.tienda.TiendaActivity ||
-            activity is com.datgarscan.app.popup.PopupActivity
-        ) return
-        for (i in 0 until container.childCount) {
-            if (container.getChildAt(i).tag == TAG_PROPIO) return
+        // Banner editable desde el panel web (/api/banner_propio.php)
+        try {
+            BannerPropioHelper.mostrar(activity, container)
+        } catch (e: Exception) {
+            Log.e(TAG, "mostrarPropio web", e)
         }
-        val propio = android.widget.ImageView(activity).apply {
-            tag = TAG_PROPIO
-            setImageResource(com.datgarscan.app.R.drawable.banner_propio)
-            scaleType = android.widget.ImageView.ScaleType.FIT_XY
-            contentDescription = "Quitar los anuncios en la Tienda"
-            layoutParams = FrameLayout.LayoutParams(
-                dp(activity, 320), dp(activity, 50), android.view.Gravity.CENTER_HORIZONTAL
-            )
-            outlineProvider = object : android.view.ViewOutlineProvider() {
-                override fun getOutline(view: android.view.View, outline: android.graphics.Outline) {
-                    outline.setRoundRect(0, 0, view.width, view.height, dp(activity, 8).toFloat())
-                }
-            }
-            clipToOutline = true
-            setOnClickListener {
-                try {
-                    activity.startActivity(
-                        com.datgarscan.app.tienda.TiendaActivity.crearIntent(activity)
-                    )
-                } catch (_: Throwable) { }
-            }
-        }
-        container.addView(propio, 0)
-        container.visibility = android.view.View.VISIBLE
     }
 
     private fun cargarBannerAhora(activity: Activity, container: ViewGroup, intento: Int) {
@@ -329,6 +320,7 @@ object UnityAdsManager {
                 override fun onBannerLoaded(bannerAdView: BannerView?) {
                     Log.d(TAG, "Banner cargado")
                     quitarPropio(container)
+                    try { BannerPropioHelper.quitar(container) } catch (_: Throwable) {}
                     container.visibility = android.view.View.VISIBLE
                 }
 
