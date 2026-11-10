@@ -73,6 +73,15 @@ interface DatGarApiService {
         @Query("chapter_id") chapterId: Int
     ): GarritasEstado
 
+    @GET("api/rachas.php")
+    suspend fun obtenerRacha(@Query("accion") accion: String = "estado"): RachaEstado
+
+    @GET("api/rachas.php")
+    suspend fun reclamarHitoRacha(
+        @Query("accion") accion: String = "reclamar_hito",
+        @Query("hito") hito: Int
+    ): RespuestaSimple
+
     @GET("api/perfil.php")
     suspend fun obtenerPerfil(): PerfilResponse
 
