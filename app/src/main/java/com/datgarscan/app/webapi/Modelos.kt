@@ -190,6 +190,24 @@ data class VersionResponse(
     val obligatorio: Boolean = false
 )
 
+data class HitoRacha(
+    val dia: Int,
+    val garritas: Int = 0,
+    val pro_horas: Int = 0,
+    val reclamado: Boolean = false,
+    val disponible: Boolean = false
+)
+
+data class RachaEstado(
+    val success: Boolean,
+    val racha_actual: Int = 0,
+    val mejor_racha: Int = 0,
+    val ultima_actividad: String? = null,
+    val dias_semana: List<Boolean> = emptyList(),
+    val hitos: List<HitoRacha> = emptyList(),
+    val message: String? = null
+)
+
 data class ReporteRequest(
     val asunto: String,
     val manga: String = "",

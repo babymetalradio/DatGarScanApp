@@ -458,6 +458,8 @@ class LectorActivity : BaseActivity() {
                     WebApiClient.get().guardarProgreso(
                         HistorialGuardarRequest(mangaId, chapterId, posicionReal + 1)
                     )
+                    // Día de racha: al menos un capítulo leído hoy.
+                    com.datgarscan.app.rachas.RachaManager.marcarLecturaHoy(this@LectorActivity)
                 } catch (e: Exception) {
                     Log.w("LectorActivity", "No se pudo guardar el progreso: ${e.message}")
                 }
