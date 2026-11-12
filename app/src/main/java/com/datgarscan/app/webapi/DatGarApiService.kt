@@ -82,6 +82,9 @@ interface DatGarApiService {
         @Query("hito") hito: Int
     ): RespuestaSimple
 
+    @POST("api/activo.php")
+    suspend fun pingActivo(): RespuestaSimple
+
     @GET("api/perfil.php")
     suspend fun obtenerPerfil(): PerfilResponse
 
